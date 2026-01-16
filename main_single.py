@@ -101,8 +101,6 @@ def main(page: ft.Page):
     ]))
     rg_level.value = "beginner"
 
-    # Logic Import was moved to top, removing it from here to fix indentation flow
-    
     def on_gen(e):
         if not all([tf_height.value, tf_weight.value, tf_weekly.value]):
             page.snack_bar = ft.SnackBar(ft.Text("모든 정보를 입력해주세요!"))
