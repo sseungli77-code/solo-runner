@@ -47,6 +47,13 @@ def main(page: ft.Page):
     page.padding = 0
     # page.scroll = "adaptive"
     
+    # Safe Update Helper
+    def safe_update():
+        try:
+            page.update()
+        except Exception:
+            pass # Ignore benign update errors
+
     # --- Navigation Logic ---
     def switch_to(view_key):
         page.clean()
@@ -82,7 +89,7 @@ def main(page: ft.Page):
             content = view_run
             
         page.add(ft.Column([content, nav], expand=True))
-        page.update()
+        safe_update()
 
     # --- VIEWS ---
 
@@ -103,12 +110,12 @@ def main(page: ft.Page):
         if not all([tf_height.value, tf_weight.value, tf_weekly.value]):
             page.snack_bar = ft.SnackBar(ft.Text("모든 정보를 입력해주세요!"))
             page.snack_bar.open = True
-            page.update()
+            safe_update()
             return
 
         btn_gen.disabled = True
         btn_gen.text = "AI가 플랜을 설계 중입니다..."
-        page.update()
+        safe_update()
         
         try:
             # Call Logic Directly (Monolithic)
@@ -138,11 +145,14 @@ def main(page: ft.Page):
         
         btn_gen.disabled = False
         btn_gen.text = "AI 플랜 생성하기"
-        page.update()
+        safe_update()
 
     btn_gen = ft.ElevatedButton("AI 플랜 생성하기", on_click=on_gen, 
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=20),
                                 width=200)
+
+    # ... (View Set definition remains same) ...
+
 
     # --- RESTORED MODERN UI ---
     view_set = ft.Container(
@@ -347,7 +357,7 @@ def main(page: ft.Page):
         
         build_log_view()
         switch_to("plan")
-        page.update()
+        safe_update()
 
     # --- REAL GPS LOGIC ---
     def haversine(lat1, lon1, lat2, lon2):
@@ -420,7 +430,7 @@ def main(page: ft.Page):
                     
                     txt_stats.value = f"{current_km:.2f} km | {pace_str}/km"
                     
-                    page.update()
+                    safe_update()
                 except Exception as e:
                     print(f"Timer error: {e}")
             
@@ -442,7 +452,7 @@ def main(page: ft.Page):
              page.snack_bar = ft.SnackBar(ft.Text("🛰️ GPS 신호를 수신 중입니다... (실외 권장)"))
              page.snack_bar.open = True
         
-        page.update()
+        safe_update()
 
     btn_play.on_click = toggle_run
 
