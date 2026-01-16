@@ -6,9 +6,11 @@ import os
 import math
 
 # --- AI & Cloud Config ---
-GEMINI_KEY = "AIzaSyCSOLkFTEbf2hic66kcsOX8jjbNrWB2SZ0" 
-SUPA_URL = "https://cigtumbiljofgwnjeegu.supabase.co"
-SUPA_KEY = "sb_secret_B_cW2gyjQ5oCYYtaeB493g_JEYvoJkO"
+# Security: Get keys from Environment Variables
+GEMINI_KEY = os.environ.get("GEMINI_KEY")
+SUPA_URL = os.environ.get("SUPA_URL", "https://cigtumbiljofgwnjeegu.supabase.co")
+SUPA_KEY = os.environ.get("SUPA_KEY")
+
 
 # ==========================================
 # 1. Scientific Core: VDOT & Pacing

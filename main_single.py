@@ -496,4 +496,8 @@ def main(page: ft.Page):
     switch_to("set")
 
 if __name__ == "__main__":
-    ft.run(main, port=8098, view=ft.AppView.WEB_BROWSER)
+    # Render assigns a PORT env var, mostly 10000
+    # We must listen on 0.0.0.0 to be accessible externally
+    port = int(os.environ.get("PORT", 8098))
+    print(f"Starting Flet App on port {port}...")
+    ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=port, host="0.0.0.0")
