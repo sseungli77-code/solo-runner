@@ -494,4 +494,4 @@ if __name__ == "__main__":
     # We must listen on 0.0.0.0 to be accessible externally
     port = int(os.environ.get("PORT", 8098))
     print(f"Starting Flet App on port {port}...")
-    ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=port, host="0.0.0.0")
+    ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=port, host="0.0.0.0", web_renderer=ft.WebRenderer.HTML)
