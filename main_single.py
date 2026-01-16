@@ -327,17 +327,16 @@ def main(page: ft.Page):
         state["is_running"] = False
         
         # Save Log
+        dist = state.get("current_run", {}).get("dist", 0)
         log_data = {
             "date": str(datetime.now().date()),
-            "dist": state.get("current_run", {}).get("dist", 0),
-            "time": state["seconds"], # seconds
-            "pace": calculate_pace(state["seconds"], state.get("current_run", {}).get("dist", 1))
+            "dist": dist,
+            "time": state["seconds"],
+            "pace": calculate_pace(state["seconds"], dist if dist > 0 else 1)
         }
-        
-        # Local State
         state["run_logs"][key] = log_data
         
-        # Cloud Save Stub
+        # Cloud Save (Stub)
         def upload():
             try: pass 
             except: pass
@@ -350,38 +349,41 @@ def main(page: ft.Page):
         switch_to("plan")
         page.update()
 
-    # Audio Feedback Loop
-    def timer_loop():
+    # --- ASYNC TIMER LOGIC ---
+    import asyncio
+    async def run_timer_loop():
         while True:
             if state["is_running"]:
-                state["seconds"] += 1
-                
-                # Update Timer Text
-                m = state["seconds"] // 60
-                s = state["seconds"] % 60
-                txt_timer.value = f"{m:02d}:{s:02d}"
-                
-                # Mock GPS
-                total_km = state.get("current_run", {}).get("dist", 5)
-                mock_dist_km = (state["seconds"] * 3.0) / 1000.0
-                if mock_dist_km > total_km: mock_dist_km = total_km
-                
-                pb_dist.value = min(mock_dist_km / total_km, 1.0)
-                
-                # Pace
-                pace = calculate_pace(state["seconds"], mock_dist_km)
-                txt_stats.value = f"{mock_dist_km:.2f} km | {pace}/km"
-                
-                page.update()
-                
-                # Audio Coach (Every 60s)
-                if state["seconds"] % 60 == 0:
-                     speak(f"현재 페이스 {pace}입니다. 화이팅!")
-                     
-            time.sleep(1)
+                try:
+                    state["seconds"] += 1
+                    
+                    # Update Timer Text
+                    m = state["seconds"] // 60
+                    s = state["seconds"] % 60
+                    txt_timer.value = f"{m:02d}:{s:02d}"
+                    
+                    # Mock GPS Logic
+                    total_km = state.get("current_run", {}).get("dist", 5)
+                    # Speed: 1 sec = 3 meters (approx 5:30/km pace)
+                    mock_dist_km = (state["seconds"] * 3.5) / 1000.0
+                    
+                    pb_dist.value = min(mock_dist_km / max(total_km, 0.1), 1.0)
+                    
+                    # Calculate Pace
+                    pace_val = (state["seconds"] / 60) / max(mock_dist_km, 0.001)
+                    pm = int(pace_val)
+                    ps = int((pace_val - pm) * 60)
+                    
+                    txt_stats.value = f"{mock_dist_km:.2f} km | {pm}'{ps:02d}\"/km"
+                    
+                    page.update()
+                except Exception as e:
+                    print(f"Timer error: {e}")
+            
+            await asyncio.sleep(1)
 
-    # Start Timer Thread
-    threading.Thread(target=timer_loop, daemon=True).start()
+    # Fire async task
+    page.run_task(run_timer_loop)
 
     def toggle_run(e):
         state["is_running"] = not state["is_running"]
@@ -391,7 +393,9 @@ def main(page: ft.Page):
         page.update()
         
         if state["is_running"]:
-            speak("훈련을 시작합니다.")
+             page.snack_bar = ft.SnackBar(ft.Text("🚀 가상 훈련 시작! (Demo)"))
+             page.snack_bar.open = True
+             page.update()
 
     btn_play.on_click = toggle_run
 
