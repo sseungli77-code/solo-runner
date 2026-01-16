@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: solo-runner
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main_single.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
