@@ -46,7 +46,7 @@ class GPSTracker:
 def main(page: ft.Page):
     page.title = "SoloRunner AI"
     page.theme_mode = ft.ThemeMode.DARK
-    page.theme = ft.Theme(color_scheme_seed=ft.Colors.TEAL)
+    page.theme = ft.Theme(color_scheme_seed=ft.colors.TEAL)
     page.padding = 0
     # page.scroll = "adaptive"
     
@@ -149,13 +149,13 @@ def main(page: ft.Page):
     # --- RESTORED MODERN UI ---
     view_set = ft.Container(
         expand=True,
-        gradient=ft.LinearGradient(colors=[ft.Colors.BLUE_GREY_900, ft.Colors.BLACK], begin=ft.Alignment(0, -1), end=ft.Alignment(0, 1)),
+        gradient=ft.LinearGradient(colors=[ft.colors.BLUE_GREY_900, ft.colors.BLACK], begin=ft.Alignment(0, -1), end=ft.Alignment(0, 1)),
         alignment=ft.Alignment(0,0),
         content=ft.Container(
             padding=30,
             border_radius=20,
-            border=ft.border.all(1, ft.Colors.WHITE24),
-            bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.WHITE),
+            border=ft.border.all(1, ft.colors.WHITE24),
+            bgcolor=ft.colors.with_opacity(0.1, ft.colors.WHITE),
             content=ft.Column([
                 ft.Text("SOLO RUNNER", size=40, weight="bold", color="white"),
                 ft.Text("과학적인 맞춤형 러닝 플랜", size=14, color="white70"),
@@ -163,7 +163,7 @@ def main(page: ft.Page):
                 ft.Row([tf_height, tf_weight], alignment="center"),
                 ft.Row([tf_weekly, tf_record_10km], alignment="center"),
                 ft.Container(
-                    bgcolor=ft.Colors.with_opacity(0.05, ft.Colors.WHITE),
+                    bgcolor=ft.colors.with_opacity(0.05, ft.colors.WHITE),
                     padding=10, border_radius=10,
                     content=rg_level
                 ),
@@ -209,7 +209,7 @@ def main(page: ft.Page):
                     ft.Column([
                         ft.Container(
                             width=10, height=bar_height,
-                            bgcolor=ft.Colors.TEAL_ACCENT,
+                            bgcolor=ft.colors.TEAL_ACCENT,
                             border_radius=5,
                             animate=ft.Animation(1000, "easeOut"),
                         ),
@@ -221,7 +221,7 @@ def main(page: ft.Page):
              for i in range(1, 13, 2):
                  bars.append(
                     ft.Column([
-                        ft.Container(width=10, height=1, bgcolor=ft.Colors.WHITE10), # Tiny dot
+                        ft.Container(width=10, height=1, bgcolor=ft.colors.WHITE10), # Tiny dot
                         ft.Text(f"W{i}", size=8, color="grey")
                     ], alignment=ft.MainAxisAlignment.END, spacing=2)
                  )
@@ -229,7 +229,7 @@ def main(page: ft.Page):
         controls.append(
             ft.Container(
                 height=200, padding=20,
-                border=ft.border.all(1, ft.Colors.WHITE12),
+                border=ft.border.all(1, ft.colors.WHITE12),
                 border_radius=10,
                 content=ft.Column([
                     ft.Text("Estimated Goal Trajectory", size=12, color="grey"), # Renamed Title
@@ -254,8 +254,8 @@ def main(page: ft.Page):
             controls.append(
                 ft.Container(
                     margin=10, padding=15, border_radius=10,
-                    bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.TEAL),
-                    border=ft.border.only(left=ft.BorderSide(4, ft.Colors.TEAL)),
+                    bgcolor=ft.colors.with_opacity(0.1, ft.colors.TEAL),
+                    border=ft.border.only(left=ft.BorderSide(4, ft.colors.TEAL)),
                     content=ft.Column([
                         ft.Text("AI ANALYTICS", size=12, color="teal"),
                         ft.Text(pred_text, size=14),
@@ -279,8 +279,8 @@ def main(page: ft.Page):
                 row_controls = []
                 for i, day in enumerate(week_data["schedule"]):
                     is_done = f"{wk_num}-{i}" in state["run_logs"]
-                    card_color = ft.Colors.GREY_900 if day['type'] != 'Rest' else ft.Colors.BLACK12
-                    if is_done: card_color = ft.Colors.GREEN_900
+                    card_color = ft.colors.GREY_900 if day['type'] != 'Rest' else ft.colors.BLACK12
+                    if is_done: card_color = ft.colors.GREEN_900
                     
                     card = ft.Container(
                         width=90, height=110,
@@ -318,21 +318,21 @@ def main(page: ft.Page):
 
     view_log = ft.Container(
         expand=True,
-        gradient=ft.LinearGradient(colors=[ft.Colors.GREY_900, ft.Colors.BLACK], begin=ft.Alignment(0, -1), end=ft.Alignment(0, 1)),
+        gradient=ft.LinearGradient(colors=[ft.colors.GREY_900, ft.colors.BLACK], begin=ft.Alignment(0, -1), end=ft.Alignment(0, 1)),
         content=col_log_content
     )
 
     # 3. RUN VIEW (Modern)
     txt_run_title = ft.Text("READY", size=16, weight="bold")
-    txt_run_target = ft.Text("-", size=30, weight="bold", color=ft.Colors.TEAL_ACCENT)
+    txt_run_target = ft.Text("-", size=30, weight="bold", color=ft.colors.TEAL_ACCENT)
     txt_run_desc = ft.Text("-", color="white70")
     
-    txt_timer = ft.Text("00:00", size=80, weight="bold", font_family="monospace", color=ft.Colors.WHITE)
+    txt_timer = ft.Text("00:00", size=80, weight="bold", font_family="monospace", color=ft.colors.WHITE)
     txt_stats = ft.Text("0.00 km | 0'00\"/km", size=18, color="white60")
-    pb_dist = ft.ProgressBar(width=300, value=0, color=ft.Colors.TEAL)
+    pb_dist = ft.ProgressBar(width=300, value=0, color=ft.colors.TEAL)
     
-    btn_play = ft.IconButton(ft.Icons.PLAY_CIRCLE_FILLED, icon_size=100, icon_color=ft.Colors.TEAL_400)
-    btn_finish = ft.ElevatedButton("훈련 저장", visible=False, bgcolor=ft.Colors.GREEN_700, color="white")
+    btn_play = ft.IconButton(ft.Icons.PLAY_CIRCLE_FILLED, icon_size=100, icon_color=ft.colors.TEAL_400)
+    btn_finish = ft.ElevatedButton("훈련 저장", visible=False, bgcolor=ft.colors.GREEN_700, color="white")
 
     def finish_run(e):
         key = state.get("current_log_key")
@@ -414,7 +414,7 @@ def main(page: ft.Page):
     btn_play.on_click = toggle_run
 
     view_run = ft.Container(
-        gradient=ft.RadialGradient(colors=[ft.Colors.BLUE_GREY_900, ft.Colors.BLACK], radius=2),
+        gradient=ft.RadialGradient(colors=[ft.colors.BLUE_GREY_900, ft.colors.BLACK], radius=2),
         alignment=ft.Alignment(0,0),
         content=ft.Column([
             ft.Container(height=40),
@@ -426,9 +426,9 @@ def main(page: ft.Page):
             ft.Container(
                 content=txt_timer, 
                 padding=20, 
-                border=ft.border.all(2, ft.Colors.TEAL_700),
+                border=ft.border.all(2, ft.colors.TEAL_700),
                 border_radius=100,
-                shadow=ft.BoxShadow(spread_radius=1, blur_radius=20, color=ft.Colors.TEAL_900)
+                shadow=ft.BoxShadow(spread_radius=1, blur_radius=20, color=ft.colors.TEAL_900)
             ),
             ft.Container(height=20),
             txt_stats,
