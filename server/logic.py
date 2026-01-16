@@ -158,7 +158,18 @@ def generate_plan_core(level_key, pace_10km, user_weekly_min, height_cm, weight_
                 "desc": desc
             })
             
-        plan_weeks.append({"week": wk, "schedule": runs, "phase": phase, "total_km": round(wk_dist, 1)})
+        # Helper for volume/intensity display
+        vol_str = f"{int(wk_dist * paces['E'])}~{int(wk_dist * paces['M'])}" # rough min estimate
+        
+        plan_weeks.append({
+            "week": wk, 
+            "schedule": runs, 
+            "phase": phase, 
+            "focus": f"{phase} Phase",  # Fix KeyError: focus
+            "volume": vol_str,        # Fix potential KeyError
+            "intensity": "Low" if wk < 4 else "Moderate", # safe default
+            "total_km": round(wk_dist, 1)
+        })
 
     # --- D. Analysis & Prediction ---
     # In V1, we simulate initial prediction based on profile
