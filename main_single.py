@@ -99,54 +99,49 @@ def main(page: ft.Page):
     ]))
     rg_level.value = "beginner"
 
-    def on_gen(e):
-        try:
-            r10 = float(tf_record_10km.value) if tf_record_10km.value else 60.0
-            w_min = int(tf_weekly.value) if tf_weekly.value else 120
-            h = float(tf_height.value) if tf_height.value else 175.0
-            w = float(tf_weight.value) if tf_weight.value else 70.0
-            
-            # API Payload
-            payload = {
-                "height": h,
-                "weight": w,
-                "weekly_min": w_min,
-                "record_10km": r10,
-                "level": rg_level.value
-            }
-            
-            # Call Brain (Server)
-            try:
-                res = requests.post("http://127.0.0.1:8000/generate", json=payload, timeout=5)
-                res.raise_for_status()
-                data = res.json()
-                
-                state["full_plan"] = data["plan"]
-                state["analysis"] = data.get("analysis")
-                state["run_logs"] = {}
-                
-                build_log_view()
-                switch_to("plan")
-                
-                # Show Risk Message if needed
-                msg = data.get("message", "플랜 생성 완료!")
-                if data.get("risk_level") != "SAFE":
-                    page.snack_bar = ft.SnackBar(ft.Text(f"⚠️ {msg}"), bgcolor="orange")
-                else:
-                    page.snack_bar = ft.SnackBar(ft.Text(msg))
-                    
-                page.snack_bar.open = True
-                page.update()
-                
-            except requests.exceptions.RequestException as re:
-                 page.snack_bar = ft.SnackBar(ft.Text(f"서버 연결 실패: {re}"), bgcolor="red")
-                 page.snack_bar.open = True
-                 page.update()
+# Import Logic Directly (Monolithic Architecture)
+from server.logic import generate_plan_core, analyze_logs_and_predict
 
-        except ValueError:
-            page.snack_bar = ft.SnackBar(ft.Text("입력값을 확인해주세요."))
+    def on_gen(e):
+        if not all([tf_height.value, tf_weight.value, tf_weekly.value]):
+            page.snack_bar = ft.SnackBar(ft.Text("모든 정보를 입력해주세요!"))
             page.snack_bar.open = True
             page.update()
+            return
+
+        btn_gen.disabled = True
+        btn_gen.text = "AI가 플랜을 설계 중입니다..."
+        page.update()
+        
+        try:
+            # Call Logic Directly (Monolithic)
+            h = float(tf_height.value)
+            w = float(tf_weight.value)
+            rec = float(tf_record_10km.value) if tf_record_10km.value else 60.0
+            weekly = int(tf_weekly.value)
+            lvl = rg_level.value
+            
+            # Direct Function Call
+            response_data = generate_plan_core(lvl, rec, weekly, h, w)
+            
+            # Store to state
+            state["full_plan"] = response_data["plan"]
+            state["analysis"] = response_data.get("analysis")
+            
+            page.snack_bar = ft.SnackBar(ft.Text(f"✅ {response_data['message']}"))
+            page.snack_bar.open = True
+            
+            build_log_view()
+            switch_to("plan")
+            
+        except Exception as err:
+            print(f"Error: {err}")
+            page.snack_bar = ft.SnackBar(ft.Text(f"오류 발생: {str(err)}"))
+            page.snack_bar.open = True
+        
+        btn_gen.disabled = False
+        btn_gen.text = "AI 플랜 생성하기"
+        page.update()
 
     btn_gen = ft.ElevatedButton("AI 플랜 생성하기", on_click=on_gen, 
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=20),
