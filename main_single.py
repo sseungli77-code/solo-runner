@@ -3,6 +3,7 @@ import os
 import math
 import time
 import threading
+from server.logic import generate_plan_core, analyze_logs_and_predict # Imported here
 
 # ==========================================
 # 1. Logic: Periodization Generator (Scientific)
@@ -100,9 +101,8 @@ def main(page: ft.Page):
     ]))
     rg_level.value = "beginner"
 
-# Import Logic Directly (Monolithic Architecture)
-from server.logic import generate_plan_core, analyze_logs_and_predict
-
+    # Logic Import was moved to top, removing it from here to fix indentation flow
+    
     def on_gen(e):
         if not all([tf_height.value, tf_weight.value, tf_weekly.value]):
             page.snack_bar = ft.SnackBar(ft.Text("모든 정보를 입력해주세요!"))
