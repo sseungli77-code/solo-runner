@@ -349,6 +349,47 @@ def main(page: ft.Page):
         switch_to("plan")
         page.update()
 
+    # --- REAL GPS LOGIC ---
+    def haversine(lat1, lon1, lat2, lon2):
+        R = 6371.0 # Earth radius in km
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+        c = 2 * math.asin(math.sqrt(a))
+        return R * c
+
+    # Hidden input to receive GPS from JS
+    gps_input = ft.TextField(visible=False)
+
+    def on_gps_change(e):
+        try:
+            val = gps_input.value
+            if not val or "," not in val: return
+            
+            lat, lon = map(float, val.split(","))
+            
+            # Initial fix
+            if state.get("last_pos") is None:
+                state["last_pos"] = (lat, lon)
+                return
+
+            # Calculate distance
+            last_lat, last_lon = state["last_pos"]
+            dist_km = haversine(last_lat, last_lon, lat, lon)
+            
+            # Filter noise (ignore tiny movements < 2m or huge jumps > 50m/sec)
+            if 0.002 < dist_km < 0.05: 
+                state["real_distance"] = state.get("real_distance", 0.0) + dist_km
+                state["last_pos"] = (lat, lon)
+            
+            # Update state for Timer Loop to read
+            state["current_dist"] = state.get("real_distance", 0.0)
+
+        except Exception as err:
+            print(f"GPS Error: {err}")
+
+    gps_input.on_change = on_gps_change
+
     # --- ASYNC TIMER LOGIC ---
     import asyncio
     async def run_timer_loop():
@@ -362,19 +403,22 @@ def main(page: ft.Page):
                     s = state["seconds"] % 60
                     txt_timer.value = f"{m:02d}:{s:02d}"
                     
-                    # Mock GPS Logic
+                    # Real GPS Distance
+                    current_km = state.get("current_dist", 0.0)
                     total_km = state.get("current_run", {}).get("dist", 5)
-                    # Speed: 1 sec = 3 meters (approx 5:30/km pace)
-                    mock_dist_km = (state["seconds"] * 3.5) / 1000.0
                     
-                    pb_dist.value = min(mock_dist_km / max(total_km, 0.1), 1.0)
+                    pb_dist.value = min(current_km / max(total_km, 0.1), 1.0)
                     
                     # Calculate Pace
-                    pace_val = (state["seconds"] / 60) / max(mock_dist_km, 0.001)
+                    pace_val = (state["seconds"] / 60) / max(current_km, 0.001)
                     pm = int(pace_val)
                     ps = int((pace_val - pm) * 60)
+                    if pm > 30: # Noise filter for standstill
+                        pace_str = "-'--\""
+                    else:
+                        pace_str = f"{pm}'{ps:02d}\""
                     
-                    txt_stats.value = f"{mock_dist_km:.2f} km | {pm}'{ps:02d}\"/km"
+                    txt_stats.value = f"{current_km:.2f} km | {pace_str}/km"
                     
                     page.update()
                 except Exception as e:
@@ -390,12 +434,15 @@ def main(page: ft.Page):
         btn_play.icon = ft.icons.PAUSE_CIRCLE_FILLED if state["is_running"] else ft.icons.PLAY_CIRCLE_FILLED
         btn_play.icon_color = "red400" if state["is_running"] else "teal400"
         btn_finish.visible = not state["is_running"]
-        page.update()
         
         if state["is_running"]:
-             page.snack_bar = ft.SnackBar(ft.Text("🚀 가상 훈련 시작! (Demo)"))
+             state["real_distance"] = 0.0
+             state["current_dist"] = 0.0
+             state["last_pos"] = None # Reset GPS fix
+             page.snack_bar = ft.SnackBar(ft.Text("🛰️ GPS 신호를 수신 중입니다... (실외 권장)"))
              page.snack_bar.open = True
-             page.update()
+        
+        page.update()
 
     btn_play.on_click = toggle_run
 
@@ -403,6 +450,7 @@ def main(page: ft.Page):
         gradient=ft.RadialGradient(colors=["blueGrey900", "black"], radius=2),
         alignment=ft.Alignment(0,0),
         content=ft.Column([
+            gps_input, # Add hidden GPS input to View
             ft.Container(height=40),
             txt_run_title,
             txt_run_target,
