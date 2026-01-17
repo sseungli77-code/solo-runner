@@ -28,6 +28,7 @@ jobs:
           channel: 'stable'
 
       - name: Accept Android Licenses
+        continue-on-error: true
         run: yes | flutter doctor --android-licenses || true
 
       - name: Get Dependencies
