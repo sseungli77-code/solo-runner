@@ -27,7 +27,7 @@ jobs:
       run: |
         pip install "pip<24.1"
         pip install flet
-        pip install -r requirements.txt
+        pip install -r requirements_apk.txt
 
     - name: Setup Java
       uses: actions/setup-java@v3
