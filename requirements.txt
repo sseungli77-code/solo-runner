@@ -1,6 +1,6 @@
 flet
 fastapi
-uvicorn[standard]
+uvicorn
 requests
 supabase
 google-generativeai
