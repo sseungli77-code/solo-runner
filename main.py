@@ -485,8 +485,12 @@ def main(page: ft.Page):
     switch_to("set")
 
 if __name__ == "__main__":
-    # Render assigns a PORT env var, mostly 10000
-    # We must listen on 0.0.0.0 to be accessible externally
-    port = int(os.environ.get("PORT", 8098))
-    print(f"Starting Flet App on port {port}...")
-    ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=port, host="0.0.0.0")
+    # Hybrid Entry Point: 
+    # If PORT is set -> Render/Web Mode (needs explicit host/port)
+    # If no PORT -> Local/Mobile Mode (standard usage)
+    if "PORT" in os.environ:
+        port = int(os.environ.get("PORT", 8098))
+        print(f"Starting Web App on port {port}...")
+        ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=port, host="0.0.0.0")
+    else:
+        ft.app(target=main)
