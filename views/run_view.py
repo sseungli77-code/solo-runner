@@ -13,10 +13,10 @@ class RunView(ft.Column):
         self.spacing = 20
         
         # Training Info
-        self.training_title = ft.Text("추천 훈련 로딩 중...", size=20, color=ft.Colors.CYAN_200, weight=ft.FontWeight.BOLD)
-        self.training_desc = ft.Text("", size=16, color=ft.Colors.OUTLINE)
+        self.training_title = ft.Text("추천 훈련 로딩 중...", size=20, color=ft.colors.CYAN_200, weight=ft.FontWeight.BOLD)
+        self.training_desc = ft.Text("", size=16, color=ft.colors.GREY) # Changed OUTLINE to GREY
         
-        self.timer_text = ft.Text("00:00", size=80, weight=ft.FontWeight.BOLD, color=ft.Colors.PRIMARY)
+        self.timer_text = ft.Text("00:00", size=80, weight=ft.FontWeight.BOLD, color="primary") # Changed PRIMARY to "primary"
         self.is_running = False
         self.seconds = 0
         self.audio_engine = None
@@ -34,9 +34,9 @@ class RunView(ft.Column):
         )
         
         self.play_button = ft.IconButton(
-            icon=ft.Icons.PLAY_CIRCLE_FILLED,
+            icon=ft.icons.PLAY_CIRCLE_FILLED,
             icon_size=100,
-            icon_color=ft.Colors.PRIMARY,
+            icon_color="primary", # Changed PRIMARY to "primary"
             on_click=self.toggle_timer
         )
         
@@ -44,7 +44,7 @@ class RunView(ft.Column):
             self.gps_bridge,
             ft.Container(
                 content=ft.Column([
-                    ft.Text("오늘의 훈련", size=14, color=ft.Colors.OUTLINE),
+                    ft.Text("오늘의 훈련", size=14, color=ft.colors.GREY), # Changed OUTLINE to GREY
                     self.training_title,
                     self.training_desc,
                 ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
@@ -53,13 +53,13 @@ class RunView(ft.Column):
             ),
             self.timer_text,
             ft.Row([
-                ft.Column([ft.Text("Distance", size=14, color=ft.Colors.OUTLINE), self.dist_text], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                ft.Column([ft.Text("Distance", size=14, color=ft.colors.GREY), self.dist_text], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 ft.VerticalDivider(),
-                ft.Column([ft.Text("Pace", size=14, color=ft.Colors.OUTLINE), self.pace_text], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                ft.Column([ft.Text("Pace", size=14, color=ft.colors.GREY), self.pace_text], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
             ], alignment=ft.MainAxisAlignment.CENTER, spacing=40),
             ft.Container(height=20),
             self.play_button,
-            ft.Text("Tap to Start workout", size=14, color=ft.Colors.OUTLINE)
+            ft.Text("Tap to Start workout", size=14, color=ft.colors.GREY)
         ]
 
     async def did_mount(self):
@@ -144,12 +144,12 @@ class RunView(ft.Column):
     def toggle_timer(self, e):
         if self.is_running:
             self.is_running = False
-            self.play_button.icon = ft.Icons.PLAY_CIRCLE_FILLED
-            self.play_button.icon_color = ft.Colors.PRIMARY
+            self.play_button.icon = ft.icons.PLAY_CIRCLE_FILLED
+            self.play_button.icon_color = "primary"
         else:
             self.is_running = True
-            self.play_button.icon = ft.Icons.PAUSE_CIRCLE_FILLED
-            self.play_button.icon_color = ft.Colors.RED_400
+            self.play_button.icon = ft.icons.PAUSE_CIRCLE_FILLED
+            self.play_button.icon_color = ft.colors.RED_400
             
             # 오디오 시작 안내
             if self.audio_engine:

@@ -29,9 +29,9 @@ def main(page: ft.Page):
     page.navigation_bar = ft.NavigationBar(
         selected_index=0,
         destinations=[
-            ft.NavigationBarDestination(icon=ft.Icons.RUN_CIRCLE, label="Run"),
-            ft.NavigationBarDestination(icon=ft.Icons.HISTORY, label="Log"),
-            ft.NavigationBarDestination(icon=ft.Icons.SETTINGS, label="Set"),
+            ft.NavigationDestination(icon=ft.icons.RUN_CIRCLE, label="Run"),
+            ft.NavigationDestination(icon=ft.icons.HISTORY, label="Log"),
+            ft.NavigationDestination(icon=ft.icons.SETTINGS, label="Set"),
         ],
         on_change=on_nav_change,
     )
@@ -42,4 +42,4 @@ def main(page: ft.Page):
 
 if __name__ == "__main__":
     # 포트 8080으로 변경
-    ft.run(main, assets_dir="assets", view=ft.AppView.WEB_BROWSER, port=8081)
+    ft.app(main, assets_dir="assets", view=ft.AppView.WEB_BROWSER, port=8086)

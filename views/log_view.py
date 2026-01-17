@@ -21,9 +21,9 @@ class LogView(ft.Column):
             ),
             ft.Container(
                 height=200,
-                content=ft.Text("Chart Placeholder", color=ft.Colors.OUTLINE),
+                content=ft.Text("Chart Placeholder", color=ft.colors.GREY),
                 alignment=ft.Alignment(0, 0),
-                border=ft.border.all(1, ft.Colors.OUTLINE),
+                border=ft.border.all(1, ft.colors.GREY),
                 border_radius=10,
                 margin=ft.margin.only(top=20)
             )

@@ -33,7 +33,7 @@ class OnboardingView(ft.Column):
         
         self.controls = [
             ft.Text("SoloRunner 시작하기", size=32, weight=ft.FontWeight.BOLD),
-            ft.Text("당신에게 딱 맞는 논문 기반 코칭을 시작합니다.", color=ft.Colors.OUTLINE),
+            ft.Text("당신에게 딱 맞는 논문 기반 코칭을 시작합니다.", color=ft.colors.GREY),
             self.age, self.height, self.weight,
             ft.Divider(),
             ft.Text("나의 런닝 수준", size=18, weight=ft.FontWeight.BOLD),

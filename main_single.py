@@ -309,7 +309,7 @@ def main(page: ft.Page):
             
             col_log_content.controls.append(week_card)
         
-        col_log_content.update()
+        # col_log_content.update() # Removed to prevent error when control is not on page
 
     view_log = ft.Container(
         expand=True,

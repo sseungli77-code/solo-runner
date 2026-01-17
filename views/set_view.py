@@ -13,7 +13,7 @@ class SetView(ft.Column):
                 ft.Radio(value="male", label="남성"),
                 ft.Radio(value="female", label="여성"),
             ])),
-            ft.ElevatedButton("정보 저장 (Save Info)", icon=ft.Icons.SAVE, on_click=self.save_info),
+            ft.ElevatedButton("정보 저장 (Save Info)", icon=ft.icons.SAVE, on_click=self.save_info),
         ]
 
     def save_info(self, e):
