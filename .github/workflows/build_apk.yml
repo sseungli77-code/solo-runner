@@ -44,7 +44,7 @@ jobs:
       run: |
         # Flet build command to generate APK
         # We use --no-android-server to package python engine locally
-        yes | flet build apk . --module-name main_single --verbose
+        yes | flet build apk . --verbose
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
