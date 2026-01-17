@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:async';
 import 'dart:math';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Supabase 초기화 (서버 연동)
+  await Supabase.initialize(
+    url: 'https://cigtumbiljofgwnjeegu.supabase.co',
+    anonKey: 'sb_secret_B_cW2gyjQ5oCYYtaeB493g_JEYvoJkO', 
+  );
+  
   runApp(const SoloRunnerApp());
 }
 
@@ -296,19 +305,34 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  void _toggleRun() async {
+    void _toggleRun() async {
     if (_isRunning) {
-      // 멈춤
-      _timer?.cancel();
-      _positionStream?.cancel();
-      setState(() => _isRunning = false);
+      // 멈춤 -> 저장 여부 확인
+      bool? confirm = await showDialog(
+        context: context, 
+        builder: (ctx) => AlertDialog(
+          title: const Text("러닝 종료"),
+          content: const Text("러닝을 종료하고 기록을 서버에 저장할까요?"),
+          actions: [
+             TextButton(onPressed: ()=>Navigator.pop(ctx, false), child: const Text("취소")),
+             TextButton(onPressed: ()=>Navigator.pop(ctx, true), child: const Text("저장 및 종료")),
+          ],
+        )
+      );
+      
+      if (confirm == true) {
+          _timer?.cancel();
+          _positionStream?.cancel();
+          setState(() => _isRunning = false);
+          _uploadRunData(); // 서버 전송
+      }
     } else {
       // 시작
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("GPS 권한이 필요합니다.")));
+             if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("GPS 권한이 필요합니다.")));
              return;
         }
       }
@@ -334,11 +358,9 @@ class _MainScreenState extends State<MainScreen> {
           if (position != null) {
               if (lastPos != null) {
                   double d = Geolocator.distanceBetween(lastPos!.latitude, lastPos!.longitude, position.latitude, position.longitude) / 1000.0;
-                  // GPS 튐 방지 (너무 빠른 이동은 무시)
                   if (d > 0.002 && d < 0.1) { 
                       setState(() {
                           _distKm += d;
-                          // 페이스 계산
                           if (_distKm > 0) {
                               double paceVal = (_seconds / 60) / _distKm;
                               int pm = paceVal.toInt();
@@ -353,6 +375,29 @@ class _MainScreenState extends State<MainScreen> {
           }
       });
     }
+  }
+
+  // 데이터 업로드 (Supabase)
+  Future<void> _uploadRunData() async {
+      try {
+          final data = {
+             'date': DateTime.now().toIso8601String(),
+             'distance_km': double.parse(_distKm.toStringAsFixed(2)),
+             'duration_sec': _seconds,
+             'pace': _pace,
+             'user_id': 'user_1' // 나중에 실제 사용자 ID로 변경 필요
+          };
+          
+          await Supabase.instance.client
+            .from('run_logs')
+            .insert(data);
+            
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("✅ 기록이 서버에 저장되었습니다!")));
+      } catch (e) {
+          print("Upload Error: $e");
+          // 에러가 나도 앱이 죽지 않도록 안전장치
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("저장 실패 (네트워크 확인): $e")));
+      }
   }
 
   // --- 3. 플랜 페이지 (한글화) ---

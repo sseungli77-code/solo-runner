@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.6
   geolocator: ^10.1.0 # For GPS
+  supabase_flutter: ^2.0.0 # Cloud DB
   shared_preferences: ^2.2.2 # For local storage
   http: ^1.1.0 # For AI API
   google_generative_ai: ^0.2.2 # Gemini AI
