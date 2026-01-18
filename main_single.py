@@ -1,15 +1,49 @@
 import flet as ft
 import os
+import uvicorn
+from fastapi import FastAPI, Body
+from fastapi.responses import JSONResponse
+from server.logic import generate_plan_core, analyze_logs_and_predict
+
+# 1. FastAPI App (for Flutter API)
+app = FastAPI()
+
+# Enable CORS (optional but good for testing)
+# from fastapi.middleware.cors import CORSMiddleware
+# app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+@app.post("/api/plan")
+async def api_plan(data: dict = Body(...)):
+    """
+    API Endpoint for Flutter App
+    Payload: { "level": "beginner", "record_10km": 60, "weekly_min": 120, "height": 175, "weight": 70 }
+    """
+    try:
+        res = generate_plan_core(
+            data.get('level', 'beginner'), 
+            float(data.get('record_10km', 60)), 
+            int(data.get('weekly_min', 120)), 
+            float(data.get('height', 175)), 
+            float(data.get('weight', 70))
+        )
+        return JSONResponse(content=res)
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.get("/")
+def health_chk():
+    return {"status": "ok", "message": "SoloRunner API is running"}
+
+
+# ==========================================
+# 2. Main Flet App (for Web Interface)
+# ==========================================
 import math
 import time
 import threading
-from datetime import datetime, timedelta
-# Import Logic Directly (Monolithic Architecture)
-from server.logic import generate_plan_core, analyze_logs_and_predict
+from datetime import datetime
 
-# ==========================================
-# 1. State Management (Global for MVP)
-# ==========================================
+# (Paste monolithic logic below, but wrapped in 'main')
 state = {
     "full_plan": [], 
     "current_run": None,
@@ -19,9 +53,6 @@ state = {
     "last_feedback_time": 0
 }
 
-# ==========================================
-# 2. Helper Functions
-# ==========================================
 def calculate_pace(seconds, km):
     if km <= 0: return "0'00\""
     pace_min = (seconds / 60) / km
@@ -30,35 +61,20 @@ def calculate_pace(seconds, km):
     return f"{m}'{s:02d}\""
 
 def speak(text):
-    # Minimal TTS Stub for Web
-    # In a real deployed web app, use window.speechSynthesis via page.launch_url(javascript)
-    # But strictly speaking, doing that from a background thread is tricky.
-    # We will skip active implementation to prevent errors, or just print log.
     print(f"[TTS] {text}")
-
-# ==========================================
-# 3. Main App
-# ==========================================
 
 def main(page: ft.Page):
     page.title = "SoloRunner AI"
     page.theme_mode = ft.ThemeMode.DARK
     page.theme = ft.Theme(color_scheme_seed="teal")
     page.padding = 0
-    # page.scroll = "adaptive"
-    
-    # Safe Update Helper
-    def safe_update():
-        try:
-            page.update()
-        except Exception:
-            pass # Ignore benign update errors
 
-    # --- Navigation Logic ---
+    def safe_update():
+        try: page.update()
+        except: pass
+
     def switch_to(view_key):
         page.clean()
-        
-        # Bottom Nav Component
         nav = ft.NavigationBar(
             selected_index={"set":0, "run":1, "plan":2}.get(view_key, 0),
             destinations=[
@@ -73,7 +89,6 @@ def main(page: ft.Page):
         if view_key == "set": content = view_set
         elif view_key == "plan": content = view_log
         elif view_key == "run": 
-            # GPS JS Hook
             js = """
             navigator.geolocation.watchPosition(pos => {
                 var inputs = document.querySelectorAll('input');
@@ -92,8 +107,6 @@ def main(page: ft.Page):
         safe_update()
 
     # --- VIEWS ---
-
-    # 1. SETUP VIEW
     tf_height = ft.TextField(label="키 (cm)", value="175", width=120, border_radius=10)
     tf_weight = ft.TextField(label="체중 (kg)", value="70", width=120, border_radius=10)
     tf_weekly = ft.TextField(label="주간 훈련량(분)", value="120", width=150, border_radius=10)
@@ -118,23 +131,18 @@ def main(page: ft.Page):
         safe_update()
         
         try:
-            # Call Logic Directly (Monolithic)
             h = float(tf_height.value)
             w = float(tf_weight.value)
             rec = float(tf_record_10km.value) if tf_record_10km.value else 60.0
             weekly = int(tf_weekly.value)
             lvl = rg_level.value
             
-            # Direct Function Call
             response_data = generate_plan_core(lvl, rec, weekly, h, w)
-            
-            # Store to state
             state["full_plan"] = response_data["plan"]
             state["analysis"] = response_data.get("analysis")
             
             page.snack_bar = ft.SnackBar(ft.Text(f"✅ {response_data['message']}"))
             page.snack_bar.open = True
-            
             build_log_view()
             switch_to("plan")
             
@@ -151,10 +159,6 @@ def main(page: ft.Page):
                                 style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=20),
                                 width=200)
 
-    # ... (View Set definition remains same) ...
-
-
-    # --- RESTORED MODERN UI ---
     view_set = ft.Container(
         expand=True,
         gradient=ft.LinearGradient(colors=["blueGrey900", "black"], begin=ft.Alignment(0, -1), end=ft.Alignment(0, 1)),
@@ -181,8 +185,7 @@ def main(page: ft.Page):
         )
     )
 
-    # 2. LOG VIEW
-    col_log_content = ft.Column(scroll="auto", expand=True) # Main scrollable container
+    col_log_content = ft.Column(scroll="auto", expand=True)
 
     def select_run(wk_idx, day_idx, run_data):
         if run_data["type"] == "Rest": return
@@ -198,21 +201,15 @@ def main(page: ft.Page):
 
     def build_log_view():
         col_log_content.controls.clear()
-        
-        # 1) Analysis & Prediction Section
         if state.get("analysis"):
-            # Simple Chart (Bar)
             trend_data = state["analysis"].get("trend", [])
             pred_text = f"예상 10km 기록: {state['analysis'].get('predicted_10km', 0):.1f}분"
             
-            # Simple Bar Chart creation using Containers
             bars = []
             if trend_data:
-                # Normalize for height 100
                 max_val = max(trend_data) if max(trend_data) > 0 else 1
                 for val in trend_data:
                     bar_height = (val / max_val) * 80
-                    # Color based on improvement (lower is better for pace, but let's just use simple logic)
                     bars.append(
                         ft.Column([
                             ft.Container(
@@ -225,11 +222,10 @@ def main(page: ft.Page):
                         ], alignment=ft.MainAxisAlignment.END)
                     )
             else:
-                 # Dummy visualization for empty state
                  for i in range(1, 13, 2):
                      bars.append(
                         ft.Column([
-                            ft.Container(width=10, height=1, bgcolor="white10"), # Tiny dot
+                            ft.Container(width=10, height=1, bgcolor="white10"),
                             ft.Text(f"W{i}", size=8, color="grey")
                         ], alignment=ft.MainAxisAlignment.END, spacing=2)
                      )
@@ -241,14 +237,12 @@ def main(page: ft.Page):
                     border=ft.border.all(1, "white12"),
                     border_radius=10,
                     content=ft.Column([
-                        ft.Text("Estimated Goal Trajectory", size=12, color="grey"), # Renamed Title
+                        ft.Text("Estimated Goal Trajectory", size=12, color="grey"),
                         ft.Row(bars, alignment="spaceEvenly", height=100),
                         ft.Text("훈련이 지속될수록 완주 시간이 단축됩니다.", size=10, color="grey")
                     ])
                 )
             )
-
-            # Analysis Text
             controls.append(
                 ft.Container(
                     margin=10, padding=15, border_radius=10,
@@ -261,23 +255,17 @@ def main(page: ft.Page):
                     ])
                 )
             )
-            
             col_log_content.controls.extend(controls)
 
-        # 2) Plan List
         plan = state.get("full_plan", [])
         for wk in plan:
             wk_num = wk["week"]
             week_data = wk
-            
-            # Week Card
             week_card = ft.ExpansionTile(
                 title=ft.Text(f"WEEK {wk_num} - {week_data['focus']}", weight="bold"),
                 subtitle=ft.Text(f"주간 목표: {week_data['volume']}분 / 강도: {week_data['intensity']}"),
                 controls=[]
             )
-            
-            # Days
             row_controls = []
             for i, day in enumerate(week_data["schedule"]):
                 is_done = f"{wk_num}-{i}" in state["run_logs"]
@@ -299,17 +287,13 @@ def main(page: ft.Page):
                 )
                 row_controls.append(card)
             
-            # Wrap rows for mobile
             week_card.controls.append(
                 ft.Container(
                     padding=10,
                     content=ft.Row(row_controls, wrap=True, spacing=10, run_spacing=10)
                 )
             )
-            
             col_log_content.controls.append(week_card)
-        
-        # col_log_content.update() # Removed to prevent error when control is not on page
 
     view_log = ft.Container(
         expand=True,
@@ -317,7 +301,6 @@ def main(page: ft.Page):
         content=col_log_content
     )
 
-    # 3. RUN VIEW (Modern & Safe)
     txt_run_title = ft.Text("READY", size=16, weight="bold")
     txt_run_target = ft.Text("-", size=30, weight="bold", color="tealAccent")
     txt_run_desc = ft.Text("-", color="white70")
@@ -332,11 +315,7 @@ def main(page: ft.Page):
     def finish_run(e):
         key = state.get("current_log_key")
         if not key: return
-        
-        # Stop Timer
         state["is_running"] = False
-        
-        # Save Log
         dist = state.get("current_run", {}).get("dist", 0)
         log_data = {
             "date": str(datetime.now().date()),
@@ -346,7 +325,6 @@ def main(page: ft.Page):
         }
         state["run_logs"][key] = log_data
         
-        # Cloud Save (Stub)
         def upload():
             try: pass 
             except: pass
@@ -354,89 +332,61 @@ def main(page: ft.Page):
         
         page.snack_bar = ft.SnackBar(ft.Text("훈련 기록이 저장되었습니다!"))
         page.snack_bar.open = True
-        
         build_log_view()
         switch_to("plan")
         safe_update()
 
-    # --- REAL GPS LOGIC ---
     def haversine(lat1, lon1, lat2, lon2):
-        R = 6371.0 # Earth radius in km
+        R = 6371.0
         dlat = math.radians(lat2 - lat1)
         dlon = math.radians(lon2 - lon1)
         a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
         c = 2 * math.asin(math.sqrt(a))
         return R * c
 
-    # Hidden input to receive GPS from JS
     gps_input = ft.TextField(visible=False)
 
     def on_gps_change(e):
         try:
             val = gps_input.value
             if not val or "," not in val: return
-            
             lat, lon = map(float, val.split(","))
-            
-            # Initial fix
             if state.get("last_pos") is None:
                 state["last_pos"] = (lat, lon)
                 return
-
-            # Calculate distance
             last_lat, last_lon = state["last_pos"]
             dist_km = haversine(last_lat, last_lon, lat, lon)
-            
-            # Filter noise (ignore tiny movements < 2m or huge jumps > 50m/sec)
             if 0.002 < dist_km < 0.05: 
                 state["real_distance"] = state.get("real_distance", 0.0) + dist_km
                 state["last_pos"] = (lat, lon)
-            
-            # Update state for Timer Loop to read
             state["current_dist"] = state.get("real_distance", 0.0)
-
         except Exception as err:
             print(f"GPS Error: {err}")
 
     gps_input.on_change = on_gps_change
 
-    # --- ASYNC TIMER LOGIC ---
     import asyncio
     async def run_timer_loop():
         while True:
             if state["is_running"]:
                 try:
                     state["seconds"] += 1
-                    
-                    # Update Timer Text
                     m = state["seconds"] // 60
                     s = state["seconds"] % 60
                     txt_timer.value = f"{m:02d}:{s:02d}"
-                    
-                    # Real GPS Distance
                     current_km = state.get("current_dist", 0.0)
                     total_km = state.get("current_run", {}).get("dist", 5)
-                    
                     pb_dist.value = min(current_km / max(total_km, 0.1), 1.0)
-                    
-                    # Calculate Pace
                     pace_val = (state["seconds"] / 60) / max(current_km, 0.001)
                     pm = int(pace_val)
                     ps = int((pace_val - pm) * 60)
-                    if pm > 30: # Noise filter for standstill
-                        pace_str = "-'--\""
-                    else:
-                        pace_str = f"{pm}'{ps:02d}\""
-                    
+                    if pm > 30: pace_str = "-'--\""
+                    else: pace_str = f"{pm}'{ps:02d}\""
                     txt_stats.value = f"{current_km:.2f} km | {pace_str}/km"
-                    
                     safe_update()
-                except Exception as e:
-                    print(f"Timer error: {e}")
-            
+                except Exception as e: print(f"Timer error: {e}")
             await asyncio.sleep(1)
 
-    # Fire async task
     page.run_task(run_timer_loop)
 
     def toggle_run(e):
@@ -444,14 +394,12 @@ def main(page: ft.Page):
         btn_play.icon = ft.icons.PAUSE_CIRCLE_FILLED if state["is_running"] else ft.icons.PLAY_CIRCLE_FILLED
         btn_play.icon_color = "red400" if state["is_running"] else "teal400"
         btn_finish.visible = not state["is_running"]
-        
         if state["is_running"]:
              state["real_distance"] = 0.0
              state["current_dist"] = 0.0
-             state["last_pos"] = None # Reset GPS fix
+             state["last_pos"] = None
              page.snack_bar = ft.SnackBar(ft.Text("🛰️ GPS 신호를 수신 중입니다... (실외 권장)"))
              page.snack_bar.open = True
-        
         safe_update()
 
     btn_play.on_click = toggle_run
@@ -460,7 +408,7 @@ def main(page: ft.Page):
         gradient=ft.RadialGradient(colors=["blueGrey900", "black"], radius=2),
         alignment=ft.Alignment(0,0),
         content=ft.Column([
-            gps_input, # Add hidden GPS input to View
+            gps_input,
             ft.Container(height=40),
             txt_run_title,
             txt_run_target,
@@ -481,12 +429,11 @@ def main(page: ft.Page):
         ], horizontal_alignment="center")
     )
 
-    # Initial Load
     switch_to("set")
 
+# 3. Mount Flet on FastAPI
+app.mount("/", ft.app(target=main, export_asgi_app=True))
+
 if __name__ == "__main__":
-    # Render assigns a PORT env var, mostly 10000
-    # We must listen on 0.0.0.0 to be accessible externally
     port = int(os.environ.get("PORT", 8098))
-    print(f"Starting Flet App on port {port}...")
-    ft.app(target=main, view=ft.AppView.WEB_BROWSER, port=port, host="0.0.0.0")
+    uvicorn.run(app, host="0.0.0.0", port=port)

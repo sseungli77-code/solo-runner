@@ -5,6 +5,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'dart:async';
 import 'dart:math';
+import 'dart:io';
 
 // Gemini API Key (보안을 위해 실제 배포 시에는 숨겨야 함)
 const String _geminiKey = 'AIzaSyBtEtujomeYnJUc5ZlEi7CteLmapaEZ4MY';
@@ -53,12 +54,26 @@ class _MainScreenState extends State<MainScreen> {
   final TextEditingController _weightController = TextEditingController(text: "70");
   final TextEditingController _weeklyController = TextEditingController(text: "120");
   final TextEditingController _recordController = TextEditingController(text: "60");
+  
+  // 🎯 셀프 목표 설정
+  final TextEditingController _goalDistanceController = TextEditingController(text: "10");
+  final TextEditingController _goalTimeController = TextEditingController(text: "60");
+  
   String _level = "beginner";
   
   // State
   List<Map<String, dynamic>> _plan = [];
   bool _isGenerating = false;
   Map<String, dynamic>? _currentRun; // 현재 선택된 목표 훈련
+  
+  // 📊 적응형 알고리즘 데이터
+  Map<String, dynamic> _trainingProgress = {
+    'completedRuns': [],
+    'missedDays': 0,
+    'currentVDOT': 0.0,
+    'lastCalculatedVDOT': 0.0,
+    'weeklyCompletionRate': 0.0,
+  };
   
   // AI & TTS
   late FlutterTts _tts;
@@ -70,6 +85,11 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _initTTS();
     _geminiModel = GenerativeModel(model: 'gemini-pro', apiKey: _geminiKey);
+    
+    // 앱 시작 시 누락된 훈련 확인
+    Future.delayed(const Duration(seconds: 2), () {
+      _checkMissedTrainings();
+    });
   }
 
   void _initTTS() async {
@@ -110,77 +130,378 @@ class _MainScreenState extends State<MainScreen> {
 
   // --- 1. 설정 페이지 ---
   Widget _buildSetupPage() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 20),
-          const Text("SOLO RUNNER", 
-            style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.tealAccent),
-            textAlign: TextAlign.center,
-          ),
-          const Text("AI 보이스 코칭 에디션", 
-            style: TextStyle(fontSize: 16, color: Colors.white70), 
-            textAlign: TextAlign.center
-          ),
-          const SizedBox(height: 40),
-          Row(children: [
-            Expanded(child: _buildInput("키 (cm)", _heightController)),
-            const SizedBox(width: 10),
-            Expanded(child: _buildInput("몸무게 (kg)", _weightController)),
-          ]),
-          const SizedBox(height: 10),
-          Row(children: [
-            Expanded(child: _buildInput("주간 목표 (분)", _weeklyController)),
-            const SizedBox(width: 10),
-            Expanded(child: _buildInput("10km 기록 (분)", _recordController)),
-          ]),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(10)),
-            child: Column(children: [
-              RadioListTile(value: "beginner", groupValue: _level, onChanged: (v){setState(()=>_level=v.toString());}, title: const Text("입문자 (12주)", style: TextStyle(color: Colors.white))),
-              RadioListTile(value: "intermediate", groupValue: _level, onChanged: (v){setState(()=>_level=v.toString());}, title: const Text("중급자 (24주)", style: TextStyle(color: Colors.white))),
-              RadioListTile(value: "advanced", groupValue: _level, onChanged: (v){setState(()=>_level=v.toString());}, title: const Text("상급자 (48주)", style: TextStyle(color: Colors.white))),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF1A1A2E), Color(0xFF0F0F1E)],
+        ),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 20),
+            // 메인 로고 - 네온 글로우 효과
+            Text("SOLO", 
+              style: TextStyle(
+                fontSize: 45, 
+                fontWeight: FontWeight.w900,
+                fontStyle: FontStyle.italic,
+                color: const Color(0xFF00FFF0),
+                letterSpacing: 3,
+                shadows: [
+                  Shadow(color: const Color(0xFF00FFF0).withOpacity(0.6), blurRadius: 20),
+                  Shadow(color: const Color(0xFF00FFF0).withOpacity(0.3), blurRadius: 40),
+                ],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            Text("RUNNER", 
+              style: TextStyle(
+                fontSize: 45, 
+                fontWeight: FontWeight.w900,
+                fontStyle: FontStyle.italic,
+                color: const Color(0xFF00FFF0),
+                letterSpacing: 3,
+                height: 0.85,
+                shadows: [
+                  Shadow(color: const Color(0xFF00FFF0).withOpacity(0.6), blurRadius: 20),
+                  Shadow(color: const Color(0xFF00FFF0).withOpacity(0.3), blurRadius: 40),
+                ],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text("나만의 AI 달리기 코치", 
+              style: TextStyle(fontSize: 13, color: Colors.white38, letterSpacing: 0.5), 
+              textAlign: TextAlign.center
+            ),
+            const SizedBox(height: 30),
+            
+            // 입력 필드 - 네온 스타일
+            Row(children: [
+              Expanded(child: _buildNeonInput(Icons.straighten, "키", "cm", _heightController)),
+              const SizedBox(width: 10),
+              Expanded(child: _buildNeonInput(Icons.monitor_weight, "몸무게", "kg", _weightController)),
             ]),
-          ),
-          const SizedBox(height: 20),
+            const SizedBox(height: 10),
+            Row(children: [
+              Expanded(child: _buildNeonInput(Icons.access_time, "주간목표", "분", _weeklyController)),
+              const SizedBox(width: 10),
+              Expanded(child: _buildNeonInput(Icons.timer, "10km기록", "분", _recordController)),
+            ]),
+            const SizedBox(height: 20),
+            
+            // 🎯 셀프 목표 설정 - 네온 박스
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A3A3A).withOpacity(0.4),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: const Color(0xFF00FFF0).withOpacity(0.5), width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF00FFF0).withOpacity(0.2),
+                    blurRadius: 15,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.flag_outlined, color: const Color(0xFF00FFF0), size: 20),
+                      const SizedBox(width: 8),
+                      const Text("셀프 목표 설정", 
+                        style: TextStyle(
+                          color: Color(0xFF00FFF0), 
+                          fontWeight: FontWeight.bold, 
+                          fontSize: 15
+                        )
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(children: [
+                    Expanded(child: _buildNeonInput(Icons.straighten, "목표거리", "km", _goalDistanceController)),
+                    const SizedBox(width: 10),
+                    Expanded(child: _buildNeonInput(Icons.timer, "목표시간", "분", _goalTimeController)),
+                  ]),
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Text(
+                      _goalDistanceController.text.isNotEmpty && _goalTimeController.text.isNotEmpty
+                        ? "목표 페이스: ${_calculateTargetPace()}"
+                        : "",
+                      style: const TextStyle(color: Colors.white38, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // 강도 선택 - 원본 이미지 스타일 (3개 박스)
+            const Text("강도선택", 
+              style: TextStyle(
+                color: Colors.white54, 
+                fontSize: 13, 
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.5
+              )
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: _buildLevelBox("beginner", "🚶", "입문자", "12주")),
+                const SizedBox(width: 10),
+                Expanded(child: _buildLevelBox("intermediate", "🏃", "중급자", "24주")),
+                const SizedBox(width: 10),
+                Expanded(child: _buildLevelBox("advanced", "📊", "상급자", "48주")),
+              ],
+            ),
+            const SizedBox(height: 25),
           ElevatedButton(
             onPressed: _isGenerating ? null : _generatePlan,
-            style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(20), backgroundColor: Colors.teal, foregroundColor: Colors.white),
-            child: Text(_isGenerating ? "생성 중..." : "AI 플랜 생성"),
-          )
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              backgroundColor: const Color(0xFF00FFF0),
+              foregroundColor: const Color(0xFF0F0F1E),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+              shadowColor: const Color(0xFF00FFF0).withOpacity(0.5),
+            ).copyWith(
+              overlayColor: WidgetStateProperty.all(Colors.white.withOpacity(0.1)),
+            ),
+            child: Text(
+              _isGenerating ? "생성 중..." : "AI 목표치 설정 생성",
+              style: const TextStyle(
+                fontSize: 16, 
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 15),
         ],
       ),
     );
   }
 
-  Widget _buildInput(String label, TextEditingController ctrl) {
-    return TextField(
-      controller: ctrl,
-      keyboardType: TextInputType.number,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(labelText: label, labelStyle: const TextStyle(color: Colors.white70), border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))),
+  // 🎨 네온 스타일 입력 필드 (원본 이미지와 똑같이)
+  Widget _buildNeonInput(IconData icon, String label, String unit, TextEditingController ctrl) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A3A3A).withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF00FFF0).withOpacity(0.4), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00FFF0).withOpacity(0.1),
+            blurRadius: 8,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF00FFF0), size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label, 
+                  style: const TextStyle(
+                    color: Colors.white38, 
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
+                  )
+                ),
+                const SizedBox(height: 2),
+                TextField(
+                  controller: ctrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(
+                    color: Colors.white, 
+                    fontSize: 18, 
+                    fontWeight: FontWeight.w700,
+                    height: 1.0,
+                  ),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    border: InputBorder.none,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            unit, 
+            style: const TextStyle(
+              color: Colors.white30, 
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+            )
+          ),
+        ],
+      ),
     );
+  }
+  
+  // 🎨 레벨 선택 박스 (원본 이미지 스타일 - 3개 박스)
+  Widget _buildLevelBox(String value, String emoji, String label, String duration) {
+    bool isSelected = _level == value;
+    return InkWell(
+      onTap: () => setState(() => _level = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected 
+            ? const Color(0xFF00FFF0).withOpacity(0.15)
+            : const Color(0xFF1A3A3A).withOpacity(0.3),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected 
+              ? const Color(0xFF00FFF0).withOpacity(0.6)
+              : const Color(0xFF00FFF0).withOpacity(0.2),
+            width: isSelected ? 2 : 1.5,
+          ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: const Color(0xFF00FFF0).withOpacity(0.3),
+              blurRadius: 12,
+              spreadRadius: 0,
+            ),
+          ] : null,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isSelected 
+                  ? const Color(0xFF00FFF0).withOpacity(0.2)
+                  : Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                emoji, 
+                style: const TextStyle(fontSize: 24),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? const Color(0xFF00FFF0) : Colors.white70,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              duration,
+              style: TextStyle(
+                color: isSelected 
+                  ? const Color(0xFF00FFF0).withOpacity(0.7)
+                  : Colors.white38,
+                fontSize: 11,
+              ),
+            ),
+            if (isSelected) ...[
+              const SizedBox(height: 4),
+              Icon(
+                Icons.check_circle,
+                color: const Color(0xFF00FFF0),
+                size: 16,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🎯 목표 페이스 계산
+  String _calculateTargetPace() {
+    try {
+      double dist = double.parse(_goalDistanceController.text);
+      double time = double.parse(_goalTimeController.text);
+      if (dist > 0) {
+        double paceMin = time / dist;
+        int min = paceMin.toInt();
+        int sec = ((paceMin - min) * 60).toInt();
+        return "$min'${sec.toString().padLeft(2, '0')}\" /km";
+      }
+    } catch (e) {}
+    return "--'--\" /km";
+  }
+
+  // 📊 VDOT 계산 (Jack Daniels' Running Formula)
+  double _calculateVDOT(double distanceKm, double timeMin) {
+    // VDOT = (-4.60 + 0.182258 * v + 0.000104 * v^2) / (0.8 + 0.1894393 * e^(-0.012778 * t) + 0.2989558 * e^(-0.1932605 * t))
+    // 간소화된 근사식 사용
+    double velocity = (distanceKm * 1000) / (timeMin * 60); // m/s
+    double percent02Max = 0.8 + 0.1894393 * exp(-0.012778 * timeMin) + 0.2989558 * exp(-0.1932605 * timeMin);
+    double vo2 = -4.60 + 0.182258 * velocity + 0.000104 * velocity * velocity;
+    return vo2 / percent02Max;
   }
 
   void _generatePlan() async {
     setState(() => _isGenerating = true);
     await Future.delayed(const Duration(milliseconds: 500));
     
-    // 단순화된 로직 (실제로는 여기서 복잡한 계산 수행)
+    // 🎯 셀프 목표 기반 VDOT 계산
+    double targetVDOT = 0;
+    try {
+      double goalDist = double.parse(_goalDistanceController.text);
+      double goalTime = double.parse(_goalTimeController.text);
+      targetVDOT = _calculateVDOT(goalDist, goalTime);
+      _trainingProgress['currentVDOT'] = targetVDOT;
+      _trainingProgress['lastCalculatedVDOT'] = targetVDOT;
+    } catch (e) {
+      // 기본값 사용
+      double record10k = double.tryParse(_recordController.text) ?? 60;
+      targetVDOT = _calculateVDOT(10, record10k);
+      _trainingProgress['currentVDOT'] = targetVDOT;
+    }
+    
+    // 📊 적응형 플랜 생성 (VDOT 기반)
     List<Map<String, dynamic>> newPlan = [];
-    for(int i=1; i<=12; i++) {
+    int totalWeeks = _level == "beginner" ? 12 : (_level == "intermediate" ? 24 : 48);
+    
+    for(int i=1; i<=totalWeeks; i++) {
+        // 주차별 강도 조절 (periodization)
+        double intensity = _calculateWeekIntensity(i, totalWeeks);
+        String focus = _getWeekFocus(i, totalWeeks);
+        
+        // VDOT 기반 페이스 계산
+        double easyPace = _getPaceFromVDOT(targetVDOT, 'easy');
+        double tempoPace = _getPaceFromVDOT(targetVDOT, 'tempo');
+        double intervalPace = _getPaceFromVDOT(targetVDOT, 'interval');
+        
         newPlan.add({
           "week": i,
-          "focus": i < 5 ? "기초 다지기" : "지구력 향상",
-          "runs": [
-             {"day": "화", "type": "조깅", "dist": 3.0 + (i*0.2), "desc": "가볍게 뛰세요"},
-             {"day": "목", "type": "인터벌", "dist": 4.0, "desc": "1분 뛰고 1분 걷기"},
-             {"day": "토", "type": "LSD", "dist": 5.0 + i, "desc": "천천히 오래 뛰기"},
-          ]
+          "focus": focus,
+          "intensity": intensity,
+          "targetVDOT": targetVDOT,
+          "completed": false,
+          "runs": _generateWeekRuns(i, totalWeeks, intensity, easyPace, tempoPace, intervalPace),
         });
     }
 
@@ -190,7 +511,103 @@ class _MainScreenState extends State<MainScreen> {
       _selectedIndex = 2; // Move to Plan tab
     });
     
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("플랜 생성 완료!")));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("🎯 목표 기반 플랜 생성 완료! (VDOT: ${targetVDOT.toStringAsFixed(1)})"), backgroundColor: Colors.teal));
+  }
+  
+  // 📊 주차별 강도 계산 (피리어다이제이션)
+  double _calculateWeekIntensity(int week, int totalWeeks) {
+    // 3주 증가 + 1주 회복 사이클
+    int cycle = (week - 1) % 4;
+    double baseIntensity = 0.6 + (week / totalWeeks) * 0.3; // 점진적 증가
+    
+    if (cycle == 3) return baseIntensity * 0.7; // 회복 주
+    return baseIntensity + (cycle * 0.1); // 점진적 증가
+  }
+  
+  String _getWeekFocus(int week, int totalWeeks) {
+    double progress = week / totalWeeks;
+    if (progress < 0.3) return "기초 체력 및 유연성";
+    if (progress < 0.6) return "지구력 향상";
+    if (progress < 0.85) return "스피드 및 템포";
+    return "목표 달성 및 테이퍼링";
+  }
+  
+  // VDOT 기반 페이스 계산
+  double _getPaceFromVDOT(double vdot, String type) {
+    // Jack Daniels' formula 기반 근사치
+    double basePace = 0;
+    
+    switch(type) {
+      case 'easy':
+        basePace = 65 / vdot; // E pace (분/km)
+        break;
+      case 'tempo':
+        basePace = 55 / vdot; // T pace
+        break;
+      case 'interval':
+        basePace = 48 / vdot; // I pace
+        break;
+      default:
+        basePace = 60 / vdot;
+    }
+    
+    return basePace;
+  }
+  
+  // 주차별 훈련 생성
+  List<Map<String, dynamic>> _generateWeekRuns(int week, int totalWeeks, double intensity, double easyPace, double tempoPace, double intervalPace) {
+    List<Map<String, dynamic>> runs = [];
+    
+    // 기본 3일 훈련
+    runs.add({
+      "day": "화",
+      "type": "이지런",
+      "dist": 3.0 + (intensity * 2),
+      "targetPace": easyPace,
+      "desc": "편안한 페이스로 (${_formatPace(easyPace)})",
+      "completed": false,
+    });
+    
+    if (week % 4 == 0) {
+      // 회복 주
+      runs.add({
+        "day": "목",
+        "type": "회복런",
+        "dist": 3.0,
+        "targetPace": easyPace * 1.15,
+        "desc": "아주 가볍게 (${_formatPace(easyPace * 1.15)})",
+        "completed": false,
+      });
+    } else {
+      // 일반 주 - 인터벌 또는 템포
+      runs.add({
+        "day": "목",
+        "type": week % 2 == 0 ? "템포런" : "인터벌",
+        "dist": 4.0 + (intensity * 1),
+        "targetPace": week % 2 == 0 ? tempoPace : intervalPace,
+        "desc": week % 2 == 0 
+          ? "지속 가능한 빠른 페이스 (${_formatPace(tempoPace)})"
+          : "3분 질주 + 2분 회복 반복 (${_formatPace(intervalPace)})",
+        "completed": false,
+      });
+    }
+    
+    runs.add({
+      "day": "토",
+      "type": "LSD (장거리)",
+      "dist": 5.0 + (week * 0.3),
+      "targetPace": easyPace * 1.1,
+      "desc": "천천히 오래 달리기 (${_formatPace(easyPace * 1.1)})",
+      "completed": false,
+    });
+    
+    return runs;
+  }
+  
+  String _formatPace(double pace) {
+    int min = pace.toInt();
+    int sec = ((pace - min) * 60).toInt();
+    return "$min'${sec.toString().padLeft(2, '0')}\"";
   }
 
   // --- 2. 러닝 페이지 (AI 보이스 코칭 적용) ---
@@ -207,84 +624,160 @@ class _MainScreenState extends State<MainScreen> {
     
     return Container(
       decoration: const BoxDecoration(
-         gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF263238), Color(0xFF000000)])
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF1A2A3A), Color(0xFF0F0F1E)],
+        ),
       ),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-             // 상단: 목표 훈련 표시
-             if (_currentRun != null)
-               Container(
-                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                 margin: const EdgeInsets.only(bottom: 20),
-                 decoration: BoxDecoration(color: Colors.teal.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
-                 child: Text("오늘의 목표: ${_currentRun!['type']} (${_currentRun!['dist']}km)", style: const TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold)),
-               ),
-
-             Text(_isRunning ? "RUNNING" : "READY", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.tealAccent, letterSpacing: 2)),
-             const SizedBox(height: 20),
+             // 상태 텍스트 - 네온 스타일
+             Text(
+               _isRunning ? "RUNNING" : "READY", 
+               style: TextStyle(
+                 fontSize: 28, 
+                 fontWeight: FontWeight.w900,
+                 color: const Color(0xFF00FFF0),
+                 letterSpacing: 4,
+                 shadows: [
+                   Shadow(color: const Color(0xFF00FFF0).withOpacity(0.6), blurRadius: 15),
+                   Shadow(color: const Color(0xFF00FFF0).withOpacity(0.3), blurRadius: 30),
+                 ],
+               )
+             ),
+             const SizedBox(height: 40),
              
-             // 원형 타이머
+             // 네온 원형 타이머
              Container(
-               width: 220, height: 220,
+               width: 240,
+               height: 240,
                decoration: BoxDecoration(
                  shape: BoxShape.circle,
-                 border: Border.all(color: _isRunning ? Colors.tealAccent : Colors.grey, width: 4),
-                 boxShadow: [BoxShadow(color: _isRunning ? Colors.teal.withOpacity(0.5) : Colors.transparent, blurRadius: 20)]
+                 border: Border.all(
+                   color: _isRunning ? const Color(0xFF00FFF0) : const Color(0xFF00FFF0).withOpacity(0.3),
+                   width: 6,
+                 ),
+                 boxShadow: _isRunning ? [
+                   BoxShadow(
+                     color: const Color(0xFF00FFF0).withOpacity(0.5),
+                     blurRadius: 30,
+                     spreadRadius: 5,
+                   ),
+                   BoxShadow(
+                     color: const Color(0xFF00FFF0).withOpacity(0.3),
+                     blurRadius: 50,
+                     spreadRadius: 10,
+                   ),
+                 ] : [
+                   BoxShadow(
+                     color: const Color(0xFF00FFF0).withOpacity(0.2),
+                     blurRadius: 20,
+                     spreadRadius: 2,
+                   ),
+                 ],
                ),
                alignment: Alignment.center,
-               child: Text(timeStr, style: const TextStyle(fontSize: 55, fontFamily: 'monospace', fontWeight: FontWeight.bold, color: Colors.white)),
+               child: Text(
+                 timeStr,
+                 style: TextStyle(
+                   fontSize: 62,
+                   fontFamily: 'monospace',
+                   fontWeight: FontWeight.w900,
+                   color: Colors.white,
+                   shadows: [
+                     Shadow(color: const Color(0xFF00FFF0).withOpacity(0.3), blurRadius: 10),
+                   ],
+                 ),
+               ),
              ),
              
-             const SizedBox(height: 30),
+             const SizedBox(height: 50),
+             
+             // 통계 정보 - 네온 스타일
              Row(
                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                children: [
-                 _buildStatItem("거리", "${_distKm.toStringAsFixed(2)} km"),
-                 _buildStatItem("페이스", "$_pace /km"),
+                 _buildNeonStat("거리", "${_distKm.toStringAsFixed(2)}", "km"),
+                 _buildNeonStat("페이스", _pace, "/km"),
                ],
              ),
-             const SizedBox(height: 10),
-             Text(_gpsStatus, style: const TextStyle(fontSize: 12, color: Colors.grey)),
              
-             const SizedBox(height: 30),
+             const SizedBox(height: 15),
+             Text(
+               _gpsStatus,
+               style: const TextStyle(fontSize: 11, color: Colors.white30, letterSpacing: 0.5),
+             ),
              
-             // 컨트롤 버튼들 (재생/정지 + 오디오)
+             const SizedBox(height: 50),
+             
+             // 컨트롤 버튼 - 네온 원형 버튼
              Row(
                mainAxisAlignment: MainAxisAlignment.center,
                children: [
                  // 오디오 ON/OFF 버튼
-                 IconButton(
-                   icon: Icon(_isVoiceOn ? Icons.volume_up : Icons.volume_off),
-                   color: _isVoiceOn ? Colors.tealAccent : Colors.grey,
-                   iconSize: 30,
-                   onPressed: () {
-                     setState(() {
-                       _isVoiceOn = !_isVoiceOn;
-                     });
-                     _tts.speak(_isVoiceOn ? "오디오 코칭을 켭니다." : "오디오 코칭을 끕니다.");
-                   },
+                 Container(
+                   width: 50,
+                   height: 50,
+                   decoration: BoxDecoration(
+                     shape: BoxShape.circle,
+                     border: Border.all(
+                       color: _isVoiceOn ? const Color(0xFF00FFF0).withOpacity(0.6) : Colors.white24,
+                       width: 2,
+                     ),
+                     color: _isVoiceOn 
+                       ? const Color(0xFF00FFF0).withOpacity(0.15)
+                       : Colors.white.withOpacity(0.05),
+                   ),
+                   child: IconButton(
+                     icon: Icon(_isVoiceOn ? Icons.volume_up : Icons.volume_off),
+                     color: _isVoiceOn ? const Color(0xFF00FFF0) : Colors.white38,
+                     iconSize: 24,
+                     padding: EdgeInsets.zero,
+                     onPressed: () {
+                       setState(() {
+                         _isVoiceOn = !_isVoiceOn;
+                       });
+                       _tts.speak(_isVoiceOn ? "오디오 코칭을 켭니다." : "오디오 코칭을 끕니다.");
+                     },
+                   ),
                  ),
-                 const SizedBox(width: 20),
+                 const SizedBox(width: 30),
                  
-                 // 재생/정지 버튼
+                 // 재생/정지 버튼 - 네온 글로우
                  GestureDetector(
                    onTap: _toggleRun,
                    child: Container(
-                     width: 80, height: 80,
+                     width: 90,
+                     height: 90,
                      decoration: BoxDecoration(
-                       color: _isRunning ? Colors.redAccent : Colors.teal,
+                       color: _isRunning 
+                         ? const Color(0xFFFF3366)
+                         : const Color(0xFF00FFF0),
                        shape: BoxShape.circle,
-                       boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 5))]
+                       boxShadow: [
+                         BoxShadow(
+                           color: _isRunning 
+                             ? const Color(0xFFFF3366).withOpacity(0.5)
+                             : const Color(0xFF00FFF0).withOpacity(0.6),
+                           blurRadius: 25,
+                           spreadRadius: 3,
+                         ),
+                       ],
                      ),
-                     child: Icon(_isRunning ? Icons.pause : Icons.play_arrow, size: 40, color: Colors.white),
+                     child: Icon(
+                       _isRunning ? Icons.pause : Icons.play_arrow,
+                       size: 45,
+                       color: const Color(0xFF0F0F1E),
+                     ),
                    ),
                  ),
                  
-                 const SizedBox(width: 20),
-                 // 대칭을 위한 빈 공간 (또는 나중에 음악 버튼 등 추가 가능)
-                 const SizedBox(width: 30, height: 30),
+                 const SizedBox(width: 30),
+                 // 대칭을 위한 빈 공간
+                 const SizedBox(width: 50, height: 50),
                ],
              )
           ],
@@ -293,12 +786,55 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
   
-  Widget _buildStatItem(String label, String value) {
+  // 네온 스타일 통계 표시
+  Widget _buildNeonStat(String label, String value, String unit) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-      ]
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              label == "거리" ? Icons.straighten : Icons.speed,
+              color: const Color(0xFF00FFF0).withOpacity(0.6),
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white38,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'monospace',
+                ),
+              ),
+              TextSpan(
+                text: " $unit",
+                style: const TextStyle(
+                  color: Colors.white38,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -320,8 +856,21 @@ class _MainScreenState extends State<MainScreen> {
       if (confirm == true) {
           _timer?.cancel();
           _positionStream?.cancel();
+          
+          // 저장 중 로딩 표시
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => const Center(child: CircularProgressIndicator()),
+          );
+          
+          await _uploadRunData();
+          
+          if (mounted) {
+             Navigator.pop(context); // 로딩 닫기
+          }
+
           setState(() => _isRunning = false);
-          _uploadRunData();
       }
     } else {
       // 시작
@@ -352,25 +901,68 @@ class _MainScreenState extends State<MainScreen> {
         }
       });
       
-      const LocationSettings locationSettings = LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 5);
+      // 향상된 GPS 설정
+      LocationSettings locationSettings;
+      if (Platform.isAndroid) {
+        locationSettings = AndroidSettings(
+            accuracy: LocationAccuracy.bestForNavigation,
+            distanceFilter: 2, // 2미터마다 갱신 (더 자주 받아옴)
+            forceLocationManager: true,
+            intervalDuration: const Duration(milliseconds: 1000), // 1초마다 강제 갱신 시도
+        );
+      } else if (Platform.isIOS) {
+        locationSettings = AppleSettings(
+            accuracy: LocationAccuracy.bestForNavigation,
+            activityType: ActivityType.fitness,
+            distanceFilter: 2,
+            pauseLocationUpdatesAutomatically: false,
+            showBackgroundLocationIndicator: true,
+        );
+      } else {
+        locationSettings = const LocationSettings(
+            accuracy: LocationAccuracy.bestForNavigation,
+            distanceFilter: 2,
+        );
+      }
+
       Position? lastPos;
       _positionStream = Geolocator.getPositionStream(locationSettings: locationSettings).listen((Position? position) {
-          if (position != null && lastPos != null) {
-              double d = Geolocator.distanceBetween(lastPos!.latitude, lastPos!.longitude, position.latitude, position.longitude) / 1000.0;
-              if (d > 0.002 && d < 0.1) { 
-                  setState(() {
-                      _distKm += d;
-                      if (_distKm > 0) {
-                          double paceVal = (_seconds / 60) / _distKm;
-                          int pm = paceVal.toInt();
-                          int ps = ((paceVal - pm) * 60).toInt();
-                          _pace = "$pm'${ps.toString().padLeft(2,'0')}\"";
-                      }
-                      _gpsStatus = "GPS: ${position.accuracy.toInt()}m";
-                  });
+          if (position != null) {
+              // 정확도가 나쁜 신호(오차 30m 이상)는 무시 (실내 등 튈 때 방지)
+              if (position.accuracy > 30.0) {
+                 // accuracy가 안좋으면 무시하되, UI에만 표시해줄 수 있음
+                 setState(() => _gpsStatus = "GPS 신호 약함: ±${position.accuracy.toInt()}m");
+                 return;
               }
+
+              if (lastPos != null) {
+                  double d = Geolocator.distanceBetween(lastPos!.latitude, lastPos!.longitude, position.latitude, position.longitude) / 1000.0;
+                  
+                  // 너무 미세한 움직임(노이즈)은 무시하되, 빠른 걸음(초속 1m=0.001km) 이상은 잡아야 함.
+                  // 1초 간격 갱신이면 2m/s = 7.2km/h. 
+                  // 0.002km = 2m. 
+                  // 튀는 값(순간이동 100m) 필터링
+                  if (d > 0.002 && d < 0.1) { 
+                      setState(() {
+                          _distKm += d;
+                          if (_distKm > 0) {
+                              double paceVal = (_seconds / 60) / _distKm;
+                              int pm = paceVal.toInt();
+                              // 페이스가 비정상적으로 크면(멈춤 등) 처리
+                              if (pm < 30) { 
+                                int ps = ((paceVal - pm) * 60).toInt();
+                                _pace = "$pm'${ps.toString().padLeft(2,'0')}\"";
+                              }
+                          }
+                      });
+                  }
+              }
+              // 상태 업데이트
+              setState(() {
+                 _gpsStatus = "GPS: ±${position.accuracy.toInt()}m";
+              });
+              lastPos = position;
           }
-          if (position != null) lastPos = position;
       });
     }
   }
@@ -409,42 +1001,403 @@ class _MainScreenState extends State<MainScreen> {
              'user_id': 'user_android'
           };
           await Supabase.instance.client.from('run_logs').insert(data);
+          
+          // 📊 적응형 알고리즘: 러닝 완료 후 VDOT 재계산 및 플랜 조정
+          await _adjustTrainingPlan(_distKm, _seconds / 60.0);
+          
           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("✅ 기록 저장 완료!")));
       } catch (e) {
+          print("UPLOAD ERROR: $e");
           if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("저장 오류: $e")));
       }
+  }
+  
+  // 🔄 적응형 알고리즘: 훈련 플랜 자동 조정
+  Future<void> _adjustTrainingPlan(double distKm, double timeMin) async {
+    if (_plan.isEmpty || distKm < 1.0) return;
+    
+    // 1. 현재 러닝 기반 VDOT 계산
+    double newVDOT = _calculateVDOT(distKm, timeMin);
+    double oldVDOT = _trainingProgress['currentVDOT'] ?? 0.0;
+    
+    // 2. VDOT 변화율 확인
+    double vdotChange = ((newVDOT - oldVDOT) / oldVDOT) * 100;
+    
+    print("📊 VDOT 변화: $oldVDOT -> $newVDOT (${vdotChange.toStringAsFixed(1)}%)");
+    
+    // 3. 현재 훈련 완료 처리
+    if (_currentRun != null) {
+      _trainingProgress['completedRuns'].add({
+        'date': DateTime.now().toIso8601String(),
+        'distance': distKm,
+        'time': timeMin,
+        'vdot': newVDOT,
+      });
+      
+      // 현재 주차의 해당 훈련을 완료로 표시
+      for (var week in _plan) {
+        for (var run in week['runs']) {
+          if (run['type'] == _currentRun!['type'] && run['day'] == _currentRun!['day']) {
+            run['completed'] = true;
+          }
+        }
+      }
+    }
+    
+    // 4. 주간 완료율 계산
+    int completedCount = (_trainingProgress['completedRuns'] as List).length;
+    int expectedRuns = _plan.isNotEmpty ? _plan[0]['runs'].length : 3;
+    _trainingProgress['weeklyCompletionRate'] = completedCount > 0 ? (completedCount % expectedRuns) / expectedRuns : 0.0;
+    
+    // 5. 페이스가 크게 개선되었다면 (5% 이상) -> 플랜 난이도 상향
+    if (vdotChange > 5.0 && completedCount >= 3) {
+      _trainingProgress['currentVDOT'] = newVDOT;
+      await _regeneratePlanWithNewVDOT(newVDOT);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("🎉 실력이 향상되었습니다! 플랜이 자동 조정되었습니다. (VDOT: ${newVDOT.toStringAsFixed(1)})"),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+          )
+        );
+      }
+    }
+    // 6. 페이스가 크게 저하되었거나 (10% 이상) 훈련을 많이 빼먹었다면 -> 플랜 난이도 하향
+    else if (vdotChange < -10.0 || _trainingProgress['missedDays'] > 5) {
+      _trainingProgress['currentVDOT'] = newVDOT * 0.95; // 약간 낮춰서 안전하게
+      await _regeneratePlanWithNewVDOT(_trainingProgress['currentVDOT']);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("⚠️ 컨디션에 맞춰 플랜이 재조정되었습니다. 무리하지 마세요!"),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+          )
+        );
+      }
+    }
+    // 7. 정상 범위 내라면 점진적 업데이트
+    else {
+      // 이동평균으로 부드럽게 업데이트
+      _trainingProgress['currentVDOT'] = (oldVDOT * 0.8) + (newVDOT * 0.2);
+    }
+  }
+  
+  // 🔄 새로운 VDOT 기반으로 남은 플랜 재생성
+  Future<void> _regeneratePlanWithNewVDOT(double newVDOT) async {
+    if (_plan.isEmpty) return;
+    
+    int currentWeek = 1;
+    // 완료된 주차 찾기
+    for (int i = 0; i < _plan.length; i++) {
+      if (_plan[i]['completed'] == true) {
+        currentWeek = i + 2; // 다음 주부터
+      }
+    }
+    
+    // 남은 주차만 재생성
+    int totalWeeks = _plan.length;
+    for (int i = currentWeek - 1; i < totalWeeks; i++) {
+      int week = i + 1;
+      double intensity = _calculateWeekIntensity(week, totalWeeks);
+      
+      double easyPace = _getPaceFromVDOT(newVDOT, 'easy');
+      double tempoPace = _getPaceFromVDOT(newVDOT, 'tempo');
+      double intervalPace = _getPaceFromVDOT(newVDOT, 'interval');
+      
+      setState(() {
+        _plan[i]['targetVDOT'] = newVDOT;
+        _plan[i]['runs'] = _generateWeekRuns(week, totalWeeks, intensity, easyPace, tempoPace, intervalPace);
+      });
+    }
+  }
+  
+  // 📅 누락된 훈련 감지 (백그라운드에서 주기적으로 호출 가능)
+  void _checkMissedTrainings() {
+    if (_plan.isEmpty) return;
+    
+    DateTime now = DateTime.now();
+    int missedCount = 0;
+    
+    // 이번 주 훈련 확인
+    var thisWeek = _plan.first;
+    for (var run in thisWeek['runs']) {
+      if (run['completed'] != true) {
+        // 요일 확인 로직 (간단히 구현)
+        String day = run['day'];
+        int targetWeekday = _getDayOfWeek(day);
+        
+        // 현재 요일보다 과거라면 누락
+        if (now.weekday > targetWeekday) {
+          missedCount++;
+        }
+      }
+    }
+    
+    if (missedCount > 0) {
+      _trainingProgress['missedDays'] = (_trainingProgress['missedDays'] ?? 0) + missedCount;
+      print("⚠️ 누락된 훈련: $missedCount개");
+    }
+  }
+  
+  int _getDayOfWeek(String day) {
+    switch(day) {
+      case '월': return 1;
+      case '화': return 2;
+      case '수': return 3;
+      case '목': return 4;
+      case '금': return 5;
+      case '토': return 6;
+      case '일': return 7;
+      default: return 1;
+    }
   }
 
   // --- 3. 플랜 페이지 ---
   Widget _buildPlanPage() {
-    if (_plan.isEmpty) return const Center(child: Text("설정 탭에서 플랜을 생성하세요.", style: TextStyle(color: Colors.grey)));
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _plan.length,
-      itemBuilder: (ctx, i) {
-        var week = _plan[i];
-        return Card(
-          color: Colors.white10,
-          margin: const EdgeInsets.only(bottom: 16),
-          child: ExpansionTile(
-            title: Text("${week['week']}주차 : ${week['focus']}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-            children: (week['runs'] as List).map<Widget>((r) => ListTile(
-               leading: CircleAvatar(backgroundColor: Colors.teal.withOpacity(0.3), child: Text(r['day'][0], style: const TextStyle(color: Colors.white))),
-               title: Text(r['type'], style: const TextStyle(color: Colors.white)),
-               subtitle: Text(r['desc'], style: const TextStyle(color: Colors.white70)),
-               trailing: Text("${r['dist']} km", style: const TextStyle(color: Colors.tealAccent)),
-               onTap: () {
-                 // 목표 설정
-                 setState(() {
-                     _currentRun = r;
-                     _selectedIndex = 1; // Go to Run tab
-                 });
-                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("오늘의 목표: ${r['type']} 설정됨!")));
-               },
-            )).toList(),
+    if (_plan.isEmpty) {
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF1A1A2E), Color(0xFF0F0F1E)],
           ),
-        );
-      },
+        ),
+        child: const Center(
+          child: Text(
+            "설정 탭에서 플랜을 생성하세요.",
+            style: TextStyle(color: Colors.white30, fontSize: 14),
+          ),
+        ),
+      );
+    }
+    
+    // 1주차 vs 나머지
+    var thisWeek = _plan.first;
+    var futureWeeks = _plan.length > 1 ? _plan.sublist(1) : [];
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF1A1A2E), Color(0xFF0F0F1E)],
+        ),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              "THIS WEEK",
+              style: TextStyle(
+                color: const Color(0xFF00FFF0),
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+                fontSize: 16,
+                shadows: [
+                  Shadow(color: const Color(0xFF00FFF0).withOpacity(0.5), blurRadius: 10),
+                ],
+              ),
+            ),
+            const SizedBox(height: 15),
+            
+            // 📊 주간 진행 상황 - 네온 스타일
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A3A3A).withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF00FFF0).withOpacity(0.3), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF00FFF0).withOpacity(0.1),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("주간 완료율", style: TextStyle(color: Colors.white54, fontSize: 13)),
+                      Text(
+                        _getWeeklyCompletionText(),
+                        style: const TextStyle(
+                          color: Color(0xFF00FFF0),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: _getWeeklyCompletionRate(),
+                  backgroundColor: Colors.white.withOpacity(0.1),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00FFF0)),
+                  minHeight: 6,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.trending_up, color: const Color(0xFF00FFF0).withOpacity(0.7), size: 15),
+                        const SizedBox(width: 5),
+                        Text(
+                          "현재 VDOT: ${(_trainingProgress['currentVDOT'] ?? 0.0).toStringAsFixed(1)}",
+                          style: const TextStyle(color: Colors.white54, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                    if (_trainingProgress['missedDays'] > 0)
+                      Row(
+                        children: [
+                          const Icon(Icons.warning_amber, color: Color(0xFFFF6B35), size: 15),
+                          const SizedBox(width: 5),
+                          Text(
+                            "누락: ${_trainingProgress['missedDays']}일",
+                            style: const TextStyle(color: Color(0xFFFF6B35), fontSize: 11),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 15),
+          
+          // 1주차는 기본적으로 펼쳐서 보여줌
+          _buildWeekCard(thisWeek, initiallyExpanded: true),
+          
+          const SizedBox(height: 20),
+          
+          // AI 코칭 멘트 - 적응형 알고리즘 설명 강화
+          Container(
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              color: Colors.teal.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.teal.withOpacity(0.3))
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.auto_awesome, color: Colors.tealAccent, size: 20),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        "🤖 적응형 AI 트레이닝 시스템",
+                        style: TextStyle(color: Colors.teal.shade100, fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "• Jack Daniels VDOT 알고리즘 기반\n"
+                  "• 훈련 누락 시 자동 난이도 조정\n"
+                  "• 페이스 개선 감지하여 플랜 상향\n"
+                  "• 실시간 체력 지수 추적 및 조정",
+                  style: TextStyle(color: Colors.teal.shade100.withOpacity(0.8), fontSize: 12, height: 1.5),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 30),
+          
+          // 나머지 훈련 (접기/펼치기)
+          if (futureWeeks.isNotEmpty)
+            Card(
+              color: Colors.white12, // 배경 약간 다르게
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              child: ExpansionTile(
+                iconColor: Colors.white70,
+                collapsedIconColor: Colors.white54,
+                title: Text(
+                  "이후 훈련 일정 (${futureWeeks.length}주)", 
+                  style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)
+                ),
+                children: futureWeeks.map((w) => _buildWeekCard(w)).toList(),
+              ),
+            ),
+            
+           const SizedBox(height: 50),
+        ],
+      ),
     );
+  }
+
+  Widget _buildWeekCard(Map<String, dynamic> week, {bool initiallyExpanded = false}) {
+    return Card(
+      color: Colors.white10,
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ExpansionTile(
+        initiallyExpanded: initiallyExpanded,
+        title: Text("${week['week']}주차 : ${week['focus']}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        children: (week['runs'] as List).map<Widget>((r) => ListTile(
+           leading: CircleAvatar(
+             backgroundColor: r['completed'] == true ? Colors.green.withOpacity(0.3) : Colors.teal.withOpacity(0.3), 
+             child: r['completed'] == true 
+               ? const Icon(Icons.check, color: Colors.greenAccent, size: 18)
+               : Text(r['day'][0], style: const TextStyle(color: Colors.white))
+           ),
+           title: Row(
+             children: [
+               Text(r['type'], style: const TextStyle(color: Colors.white)),
+               const SizedBox(width: 8),
+               if (r['completed'] == true)
+                 const Icon(Icons.check_circle, color: Colors.greenAccent, size: 16),
+             ],
+           ),
+           subtitle: Text(r['desc'], style: const TextStyle(color: Colors.white70)),
+           trailing: Text("${r['dist']} km", style: const TextStyle(color: Colors.tealAccent)),
+           onTap: () {
+             // 목표 설정
+             setState(() {
+                 _currentRun = r;
+                 _selectedIndex = 1; // Go to Run tab
+             });
+             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("오늘의 목표: ${r['type']} 설정됨!")));
+           },
+        )).toList(),
+      ),
+    );
+  }
+  
+  // 📊 주간 완료율 계산
+  double _getWeeklyCompletionRate() {
+    if (_plan.isEmpty) return 0.0;
+    
+    var thisWeek = _plan.first;
+    List runs = thisWeek['runs'] ?? [];
+    if (runs.isEmpty) return 0.0;
+    
+    int completed = runs.where((r) => r['completed'] == true).length;
+    return completed / runs.length;
+  }
+  
+  String _getWeeklyCompletionText() {
+    if (_plan.isEmpty) return "0/0";
+    
+    var thisWeek = _plan.first;
+    List runs = thisWeek['runs'] ?? [];
+    int completed = runs.where((r) => r['completed'] == true).length;
+    return "$completed/${runs.length}";
   }
 }
