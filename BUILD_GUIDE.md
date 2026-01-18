@@ -1,18 +1,28 @@
-# SoloRunner APK Build Guide
+# SoloRunner Build & Deploy Guide
 
-## Prerequisites
-To build the APK, you need to install **Flutter** and the **Android SDK** on your computer.
-Since these tools are currently missing, the automatic build failed.
+## Current Status (Environment)
+- **Flet Version**: Downgraded to `0.21.2` for mobile compatibility.
+- **Local Build**: Failed (Requires Flutter SDK & Android SDK).
+- **Web Server**: Ready (`python main_single.py`).
 
-## How to Build (Once Flutter is Installed)
+## Deployment Options
 
-1. **Install Flutter**: [Download Link](https://docs.flutter.dev/get-started/install/windows)
-2. **Open Terminal** in this folder.
-3. **Run Command**:
-   ```bash
-   flet build apk
-   ```
-4. The APK file will appear in the `build/apk` folder.
+### 1. Render (Dynamic Web App)
+The project is configured for Render. It runs the Python server directly, so **no build step is needed**.
+- **Config**: `render.yaml`
+- **Command**: `python main_single.py`
+- **Action**: Connect your GitHub repository to Render and deploy as a "Web Service".
 
-## Alternative: Cloud Build
-If you cannot install Flutter, you can upload this code to GitHub and use "GitHub Actions" to build the APK automatically in the cloud.
+### 2. GitHub Actions (Static Build / APK)
+To generate an APK or Static Web Site, use GitHub Actions:
+1. Push this code to GitHub.
+2. Go to the "Actions" tab.
+3. Select "Build and Deploy SoloRunner".
+4. The APK will be built in the cloud.
+
+## Local Testing
+To test the app locally (mocking mobile View):
+```bash
+python main_single.py
+```
+*Note: This runs the server mode, which is how it works on Render.*
