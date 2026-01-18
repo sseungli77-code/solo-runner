@@ -40,10 +40,11 @@ jobs:
 
     - name: Flet Build APK
       run: |
-        # Ensure Flet CLI is available and build
-        # We explicitly include the 'server' directory to prevent import errors in the APK
-        # Note: server module must be included for monolithic logic
-        flet build apk main_single.py --include-packages server --verbose
+        # Workaround: Flet build expects main.py or similar entry point standard
+        cp main_single.py main.py
+        
+        # Build APK including the server module
+        flet build apk main.py --include-packages server --verbose
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
