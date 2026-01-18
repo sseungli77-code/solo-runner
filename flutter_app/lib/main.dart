@@ -277,7 +277,7 @@ class _MainScreenState extends State<MainScreen> {
               elevation: 0,
               shadowColor: const Color(0xFF00FFF0).withOpacity(0.5),
             ).copyWith(
-              overlayColor: WidgetStateProperty.all(Colors.white.withOpacity(0.1)),
+              overlayColor: MaterialStateProperty.all(Colors.white.withOpacity(0.1)),
             ),
             child: Text(
               _isGenerating ? "생성 중..." : "AI 목표치 설정 생성",
