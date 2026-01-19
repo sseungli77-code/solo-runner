@@ -547,7 +547,7 @@ class _MainScreenState extends State<MainScreen> {
     // VDOT 계산
     double targetVDOT = 0;
     try {
-      if (_isSelfGoal) {
+      if (_useSelfGoal) {
         double goalDist = double.parse(_goalDistanceController.text);
         double goalTime = double.parse(_goalTimeController.text);
         targetVDOT = _calculateVDOT(goalDist, goalTime);
