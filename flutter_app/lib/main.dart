@@ -9,16 +9,16 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-// Gemini API Key (보안을 위해 실제 배포 시에는 숨겨야 함)
+// Gemini API Key (보안???�해 ?�제 배포 ?�에???�겨????
 const String _geminiKey = 'AIzaSyBtEtujomeYnJUc5ZlEi7CteLmapaEZ4MY';
 
-// Server API URL (과학적 알고리즘 서버)
-const String _serverUrl = 'https://solo-runner-api.onrender.com'; // Render.com 배포 후 URL
+// Server API URL (과학???�고리즘 ?�버)
+const String _serverUrl = 'https://solo-runner-api.onrender.com'; // Render.com 배포 ??URL
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Supabase 초기화
+  // Supabase 초기??
   await Supabase.initialize(
     url: 'https://cigtumbiljofgwnjeegu.supabase.co',
     anonKey: 'sb_secret_B_cW2gyjQ5oCYYtaeB493g_JEYvoJkO', 
@@ -61,19 +61,19 @@ class _MainScreenState extends State<MainScreen> {
   final TextEditingController _weeklyController = TextEditingController(text: "120");
   final TextEditingController _recordController = TextEditingController(text: "60");
   
-  // 🎯 셀프 목표 설정
+  // ?�� ?�??목표 ?�정
   final TextEditingController _goalDistanceController = TextEditingController(text: "10");
   final TextEditingController _goalTimeController = TextEditingController(text: "60");
   
   String _level = "beginner";
-  bool _useSelfGoal = false; // 셀프 목표 사용 여부
+  bool _useSelfGoal = false; // ?�??목표 ?�용 ?��?
   
   // State
   List<Map<String, dynamic>> _plan = [];
   bool _isGenerating = false;
-  Map<String, dynamic>? _currentRun; // 현재 선택된 목표 훈련
+  Map<String, dynamic>? _currentRun; // ?�재 ?�택??목표 ?�련
   
-  // 📊 적응형 알고리즘 데이터
+  // ?�� ?�응???�고리즘 ?�이??
   Map<String, dynamic> _trainingProgress = {
     'completedRuns': [],
     'missedDays': 0,
@@ -85,7 +85,7 @@ class _MainScreenState extends State<MainScreen> {
   // AI & TTS
   late FlutterTts _tts;
   late GenerativeModel _geminiModel;
-  bool _isVoiceOn = true; // 오디오 코칭 ON/OFF 상태
+  bool _isVoiceOn = true; // ?�디??코칭 ON/OFF ?�태
 
   @override
   void initState() {
@@ -94,7 +94,7 @@ class _MainScreenState extends State<MainScreen> {
     _initTTS();
     _geminiModel = GenerativeModel(model: 'gemini-pro', apiKey: _geminiKey);
     
-    // 앱 시작 시 누락된 훈련 확인
+    // ???�작 ???�락???�련 ?�인
     Future.delayed(const Duration(seconds: 2), () {
       _checkMissedTrainings();
     });
@@ -104,9 +104,9 @@ class _MainScreenState extends State<MainScreen> {
     _tts = FlutterTts();
     await _tts.setLanguage("ko-KR");
     
-    // 자연스러운 남성 음성 설정
-    await _tts.setSpeechRate(0.5); // 적당한 속도
-    await _tts.setPitch(0.95); // 약간 낮은 톤 (자연스러움 유지)
+    // ?�연?�러???�성 ?�성 ?�정
+    await _tts.setSpeechRate(0.5); // ?�당???�도
+    await _tts.setPitch(0.95); // ?�간 ??? ??(?�연?�러?� ?��?)
     await _tts.setVolume(1.0);
   }
 
@@ -143,15 +143,15 @@ class _MainScreenState extends State<MainScreen> {
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.person_outline), label: '프로필'),
-          NavigationDestination(icon: Icon(Icons.directions_run), label: '러닝'),
-          NavigationDestination(icon: Icon(Icons.calendar_month), label: '플랜'),
+          NavigationDestination(icon: Icon(Icons.person_outline), label: '?�로??),
+          NavigationDestination(icon: Icon(Icons.directions_run), label: '?�닝'),
+          NavigationDestination(icon: Icon(Icons.calendar_month), label: '?�랜'),
         ],
       ),
     );
   }
 
-  // --- 1. 설정 페이지 ---
+  // --- 1. ?�정 ?�이지 ---
   Widget _buildSetupPage() {
     return Container(
       decoration: const BoxDecoration(
@@ -167,7 +167,7 @@ class _MainScreenState extends State<MainScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 20),
-            // 메인 로고 - 네온 글로우 효과
+            // 메인 로고 - ?�온 글로우 ?�과
             ShaderMask(
               shaderCallback: (bounds) => const LinearGradient(
                 colors: [Color(0xFF00FFF0), Color(0xFF00D9FF), Color(0xFF0099FF)],
@@ -212,27 +212,27 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text("나만의 AI 달리기 코치", 
+            const Text("?�만??AI ?�리�?코치", 
               style: TextStyle(fontSize: 13, color: Colors.white38, letterSpacing: 0.5), 
               textAlign: TextAlign.center
             ),
             const SizedBox(height: 30),
             
-            // 입력 필드 - 네온 스타일
+            // ?�력 ?�드 - ?�온 ?��???
             Row(children: [
-              Expanded(child: _buildNeonInput(Icons.straighten, "키", "cm", _heightController)),
+              Expanded(child: _buildNeonInput(Icons.straighten, "??, "cm", _heightController)),
               const SizedBox(width: 10),
-              Expanded(child: _buildNeonInput(Icons.monitor_weight, "몸무게", "kg", _weightController)),
+              Expanded(child: _buildNeonInput(Icons.monitor_weight, "몸무�?, "kg", _weightController)),
             ]),
             const SizedBox(height: 10),
             Row(children: [
-              Expanded(child: _buildNeonInput(Icons.access_time, "주간목표", "분", _weeklyController)),
+              Expanded(child: _buildNeonInput(Icons.access_time, "주간목표", "�?, _weeklyController)),
               const SizedBox(width: 10),
-              Expanded(child: _buildNeonInput(Icons.timer, "10km기록", "분", _recordController)),
+              Expanded(child: _buildNeonInput(Icons.timer, "10km기록", "�?, _recordController)),
             ]),
             const SizedBox(height: 20),
             
-            // 🎯 셀프 목표 설정 - 네온 박스 (토글 기능 추가)
+            // ?�� ?�??목표 ?�정 - ?�온 박스 (?��? 기능 추�?)
             InkWell(
               onTap: () {
                 setState(() {
@@ -307,7 +307,7 @@ class _MainScreenState extends State<MainScreen> {
                           size: 20
                         ),
                         const SizedBox(width: 8),
-                        const Text("셀프 목표 설정", 
+                        const Text("?�??목표 ?�정", 
                           style: TextStyle(
                             color: Color(0xFF00FFF0), 
                             fontWeight: FontWeight.bold, 
@@ -320,13 +320,13 @@ class _MainScreenState extends State<MainScreen> {
                     Row(children: [
                       Expanded(child: _buildNeonInput(Icons.straighten, "목표거리", "km", _goalDistanceController)),
                       const SizedBox(width: 10),
-                      Expanded(child: _buildNeonInput(Icons.timer, "목표시간", "분", _goalTimeController)),
+                      Expanded(child: _buildNeonInput(Icons.timer, "목표?�간", "�?, _goalTimeController)),
                     ]),
                     const SizedBox(height: 10),
                     Center(
                       child: Text(
                         _goalDistanceController.text.isNotEmpty && _goalTimeController.text.isNotEmpty
-                          ? "목표 페이스: ${_calculateTargetPace()}"
+                          ? "목표 ?�이?? ${_calculateTargetPace()}"
                           : "",
                         style: const TextStyle(color: Colors.white38, fontSize: 12),
                       ),
@@ -338,10 +338,10 @@ class _MainScreenState extends State<MainScreen> {
             
             const SizedBox(height: 20),
             
-            // 강도 선택 - AI 플랜 모드 (셀프 목표 선택 시 비활성화)
+            // 강도 ?�택 - AI ?�랜 모드 (?�??목표 ?�택 ??비활?�화)
             Opacity(
               opacity: _useSelfGoal ? 0.3 : 1.0,
-              child: const Text("AI 플랜 강도", 
+              child: const Text("AI ?�랜 강도", 
                 style: TextStyle(
                   color: Colors.white54, 
                   fontSize: 13, 
@@ -357,11 +357,11 @@ class _MainScreenState extends State<MainScreen> {
                 opacity: _useSelfGoal ? 0.3 : 1.0,
                 child: Row(
                   children: [
-                    Expanded(child: _buildLevelBox("beginner", Icons.directions_walk, "입문자", "12주")),
+                    Expanded(child: _buildLevelBox("beginner", Icons.directions_walk, "?�문??, "12�?)),
                     const SizedBox(width: 10),
-                    Expanded(child: _buildLevelBox("intermediate", Icons.directions_run, "중급자", "24주")),
+                    Expanded(child: _buildLevelBox("intermediate", Icons.directions_run, "중급??, "24�?)),
                     const SizedBox(width: 10),
-                    Expanded(child: _buildLevelBox("advanced", Icons.bar_chart, "상급자", "48주")),
+                    Expanded(child: _buildLevelBox("advanced", Icons.bar_chart, "?�급??, "48�?)),
                   ],
                 ),
               ),
@@ -401,7 +401,7 @@ class _MainScreenState extends State<MainScreen> {
                 overlayColor: MaterialStateProperty.all(Colors.white.withOpacity(0.1)),
               ),
             child: Text(
-              _isGenerating ? "생성 중..." : "AI 목표치 설정 생성",
+              _isGenerating ? "?�성 �?.." : "AI 목표�??�정 ?�성",
               style: const TextStyle(
                 fontSize: 16, 
                 fontWeight: FontWeight.w700,
@@ -415,7 +415,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // 🎨 네온 스타일 입력 필드 (원본 이미지와 똑같이)
+  // ?�� ?�온 ?��????�력 ?�드 (?�본 ?��?지?� ?�같??
   Widget _buildNeonInput(IconData icon, String label, String unit, TextEditingController ctrl) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -481,7 +481,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
   
-  // 🎨 레벨 선택 박스 (형광 아이콘 스타일)
+  // ?�� ?�벨 ?�택 박스 (?�광 ?�이�??��???
   Widget _buildLevelBox(String value, IconData icon, String label, String duration) {
     bool isSelected = _level == value;
     return InkWell(
@@ -559,7 +559,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // 🎯 목표 페이스 계산
+  // ?�� 목표 ?�이??계산
   String _calculateTargetPace() {
     try {
       double dist = double.parse(_goalDistanceController.text);
@@ -574,10 +574,10 @@ class _MainScreenState extends State<MainScreen> {
     return "--'--\" /km";
   }
 
-  // 📊 VDOT 계산 (Jack Daniels' Running Formula)
+  // ?�� VDOT 계산 (Jack Daniels' Running Formula)
   double _calculateVDOT(double distanceKm, double timeMin) {
     // VDOT = (-4.60 + 0.182258 * v + 0.000104 * v^2) / (0.8 + 0.1894393 * e^(-0.012778 * t) + 0.2989558 * e^(-0.1932605 * t))
-    // 간소화된 근사식 사용
+    // 간소?�된 근사???�용
     double velocity = (distanceKm * 1000) / (timeMin * 60); // m/s
     double percent02Max = 0.8 + 0.1894393 * exp(-0.012778 * timeMin) + 0.2989558 * exp(-0.1932605 * timeMin);
     double vo2 = -4.60 + 0.182258 * velocity + 0.000104 * velocity * velocity;
@@ -587,13 +587,13 @@ class _MainScreenState extends State<MainScreen> {
   void _generatePlan() async {
     setState(() => _isGenerating = true);
     
-    // 사용자 입력 파싱
+    // ?�용???�력 ?�싱
     double height = double.tryParse(_heightController.text) ?? 175;
     double weight = double.tryParse(_weightController.text) ?? 70;
     double weeklyMin = double.tryParse(_weeklyController.text) ?? 120;
     double record10k = double.tryParse(_recordController.text) ?? 60;
     
-    // 🎯 VDOT 계산
+    // ?�� VDOT 계산
     double targetVDOT = 0;
     if (_useSelfGoal) {
       try {
@@ -610,7 +610,7 @@ class _MainScreenState extends State<MainScreen> {
     _trainingProgress['currentVDOT'] = targetVDOT;
     _trainingProgress['lastCalculatedVDOT'] = targetVDOT;
     
-    // 🌐 서버 API 호출 (과학적 알고리즘 사용)
+    // ?�� ?�버 API ?�출 (과학???�고리즘 ?�용)
     try {
       final response = await http.post(
         Uri.parse('$_serverUrl/generate'),
@@ -627,10 +627,10 @@ class _MainScreenState extends State<MainScreen> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         
-        // 서버 응답을 Flutter 형식으로 변환
+        // ?�버 ?�답??Flutter ?�식?�로 변??
         List<Map<String, dynamic>> serverPlan = [];
         for (var week in data['plan']) {
-          // 서버 형식을 Flutter 형식으로 변환
+          // ?�버 ?�식??Flutter ?�식?�로 변??
           List<Map<String, dynamic>> runs = [];
           for (var run in week['schedule']) {
             if (run['dist'] > 0) {
@@ -664,7 +664,7 @@ class _MainScreenState extends State<MainScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("🎯 과학 기반 플랜 생성 완료! (ACSM 가이드라인)"), 
+              content: Text("?�� 과학 기반 ?�랜 ?�성 ?�료! (ACSM 가?�드?�인)"), 
               backgroundColor: Colors.teal
             )
           );
@@ -675,13 +675,13 @@ class _MainScreenState extends State<MainScreen> {
       print('INFO: Server unavailable, using local algorithm - $e');
     }
     
-    // 💻 서버 실패 시 로컬 알고리즘 폴백
+    // ?�� ?�버 ?�패 ??로컬 ?�고리즘 ?�백
     await _generatePlanLocal(targetVDOT, weeklyMin, height, weight);
   }
   
-  // 로컬 플랜 생성 (서버 실패 시 폴백)
+  // 로컬 ?�랜 ?�성 (?�버 ?�패 ???�백)
   Future<void> _generatePlanLocal(double targetVDOT, double weeklyMin, double height, double weight) async {
-    // 레벨별 설정
+    // ?�벨�??�정
     int totalWeeks = _level == "beginner" ? 12 : (_level == "intermediate" ? 24 : 48);
     double baseDistanceMultiplier = _level == "beginner" ? 0.7 : (_level == "intermediate" ? 1.0 : 1.3);
     double weeklyVolumeKm = (weeklyMin / 60) * 10;
@@ -714,46 +714,46 @@ class _MainScreenState extends State<MainScreen> {
     
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("💻 로컬 플랜 생성 완료 (VDOT: ${targetVDOT.toStringAsFixed(1)})"), backgroundColor: Colors.orange)
+        SnackBar(content: Text("?�� 로컬 ?�랜 ?�성 ?�료 (VDOT: ${targetVDOT.toStringAsFixed(1)})"), backgroundColor: Colors.orange)
       );
     }
   }
   
-  // 요일 명 변환 (English -> Korean)
+  // ?�일 �?변??(English -> Korean)
   String _translateDay(String dayEn) {
     const map = {
-      'Mon': '월', 'Tue': '화', 'Wed': '수', 
-      'Thu': '목', 'Fri': '금', 'Sat': '토', 'Sun': '일'
+      'Mon': '??, 'Tue': '??, 'Wed': '??, 
+      'Thu': '�?, 'Fri': '�?, 'Sat': '??, 'Sun': '??
     };
     return map[dayEn] ?? dayEn;
   }
   
-  // 📊 주차별 강도 계산 (피리어다이제이션)
+  // ?�� 주차�?강도 계산 (?�리?�다?�제?�션)
   double _calculateWeekIntensity(int week, int totalWeeks) {
-    // 3주 증가 + 1주 회복 사이클
+    // 3�?증�? + 1�??�복 ?�이??
     int cycle = (week - 1) % 4;
-    double baseIntensity = 0.6 + (week / totalWeeks) * 0.3; // 점진적 증가
+    double baseIntensity = 0.6 + (week / totalWeeks) * 0.3; // ?�진??증�?
     
-    if (cycle == 3) return baseIntensity * 0.7; // 회복 주
-    return baseIntensity + (cycle * 0.1); // 점진적 증가
+    if (cycle == 3) return baseIntensity * 0.7; // ?�복 �?
+    return baseIntensity + (cycle * 0.1); // ?�진??증�?
   }
   
   String _getWeekFocus(int week, int totalWeeks) {
     double progress = week / totalWeeks;
-    if (progress < 0.3) return "기초 체력 및 유연성";
-    if (progress < 0.6) return "지구력 향상";
-    if (progress < 0.85) return "스피드 및 템포";
-    return "목표 달성 및 테이퍼링";
+    if (progress < 0.3) return "기초 체력 �??�연??;
+    if (progress < 0.6) return "지구력 ?�상";
+    if (progress < 0.85) return "?�피??�??�포";
+    return "목표 ?�성 �??�이?�링";
   }
   
-  // VDOT 기반 페이스 계산
+  // VDOT 기반 ?�이??계산
   double _getPaceFromVDOT(double vdot, String type) {
-    // Jack Daniels' formula 기반 근사치
+    // Jack Daniels' formula 기반 근사�?
     double basePace = 0;
     
     switch(type) {
       case 'easy':
-        basePace = 65 / vdot; // E pace (분/km)
+        basePace = 65 / vdot; // E pace (�?km)
         break;
       case 'tempo':
         basePace = 55 / vdot; // T pace
@@ -768,61 +768,61 @@ class _MainScreenState extends State<MainScreen> {
     return basePace;
   }
   
-  // 주차별 훈련 생성 (개선: 사용자 입력 반영)
+  // 주차�??�련 ?�성 (개선: ?�용???�력 반영)
   List<Map<String, dynamic>> _generateWeekRuns(int week, int totalWeeks, double intensity, 
                                                   double levelMultiplier, double weeklyVolumeKm,
                                                   double easyPace, double tempoPace, double intervalPace) {
     List<Map<String, dynamic>> runs = [];
     
-    // 진행도에 따른 거리 증가 (1주차 → 마지막 주차로 갈수록)
+    // 진행?�에 ?�른 거리 증�? (1주차 ??마�?�?주차�?갈수�?
     double progression = week / totalWeeks;
     
-    // 기본 거리 (레벨과 주간 훈련량 반영)
+    // 기본 거리 (?�벨�?주간 ?�련??반영)
     double baseEasyDist = (2.0 + weeklyVolumeKm * 0.05) * levelMultiplier;
     double baseTempoDist = (3.0 + weeklyVolumeKm * 0.07) * levelMultiplier;
     double baseLSDDist = (4.0 + weeklyVolumeKm * 0.1) * levelMultiplier;
     
-    // 🏃 화요일: 이지런
+    // ?�� ?�요?? ?��???
     runs.add({
-      "day": "화",
-      "type": "이지런",
+      "day": "??,
+      "type": "?��???,
       "dist": double.parse((baseEasyDist + (progression * baseEasyDist * 0.5)).toStringAsFixed(1)),
       "targetPace": easyPace,
-      "desc": "편안한 페이스로 (${_formatPace(easyPace)})",
+      "desc": "?�안???�이?�로 (${_formatPace(easyPace)})",
       "completed": false,
     });
     
     if (week % 4 == 0) {
-      // 📉 회복 주 (4주마다)
+      // ?�� ?�복 �?(4주마??
       runs.add({
-        "day": "목",
-        "type": "회복런",
+        "day": "�?,
+        "type": "?�복??,
         "dist": double.parse((baseEasyDist * 0.7).toStringAsFixed(1)),
         "targetPace": easyPace * 1.15,
-        "desc": "아주 가볍게 (${_formatPace(easyPace * 1.15)})",
+        "desc": "?�주 가볍게 (${_formatPace(easyPace * 1.15)})",
         "completed": false,
       });
     } else {
-      // 💪 일반 주 - 인터벌 또는 템포
+      // ?�� ?�반 �?- ?�터�??�는 ?�포
       runs.add({
-        "day": "목",
-        "type": week % 2 == 0 ? "템포런" : "인터벌",
+        "day": "�?,
+        "type": week % 2 == 0 ? "?�포?? : "?�터�?,
         "dist": double.parse((baseTempoDist + (intensity * baseTempoDist * 0.3)).toStringAsFixed(1)),
         "targetPace": week % 2 == 0 ? tempoPace : intervalPace,
         "desc": week % 2 == 0 
-          ? "지속 가능한 빠른 페이스 (${_formatPace(tempoPace)})"
-          : "3분 질주 + 2분 회복 반복 (${_formatPace(intervalPace)})",
+          ? "지??가?�한 빠른 ?�이??(${_formatPace(tempoPace)})"
+          : "3�?질주 + 2�??�복 반복 (${_formatPace(intervalPace)})",
         "completed": false,
       });
     }
     
-    // 🏃‍♂️ 토요일: LSD (장거리) - 주차 진행에 따라 증가
+    // ?��?�♂�??�요?? LSD (?�거�? - 주차 진행???�라 증�?
     runs.add({
-      "day": "토",
-      "type": "LSD (장거리)",
+      "day": "??,
+      "type": "LSD (?�거�?",
       "dist": double.parse((baseLSDDist + (progression * baseLSDDist * 0.8)).toStringAsFixed(1)),
       "targetPace": easyPace * 1.1,
-      "desc": "천천히 오래 달리기 (${_formatPace(easyPace * 1.1)})",
+      "desc": "천천???�래 ?�리�?(${_formatPace(easyPace * 1.1)})",
       "completed": false,
     });
     
@@ -835,9 +835,9 @@ class _MainScreenState extends State<MainScreen> {
     return "$min'${sec.toString().padLeft(2, '0')}\"";
   }
 
-  // --- 2. 러닝 페이지 (AI 보이스 코칭 적용) ---
+  // --- 2. ?�닝 ?�이지 (AI 보이??코칭 ?�용) ---
   bool _isRunning = false;
-  String _gpsStatus = "GPS 대기 중...";
+  String _gpsStatus = "GPS ?��?�?..";
   double _distKm = 0.0;
   String _pace = "-'--\"";
   Timer? _timer;
@@ -859,7 +859,7 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-             // 상태 텍스트 - 네온 스타일
+             // ?�태 ?�스??- ?�온 ?��???
              Text(
                _isRunning ? "RUNNING" : "READY", 
                style: TextStyle(
@@ -875,7 +875,7 @@ class _MainScreenState extends State<MainScreen> {
              ),
              const SizedBox(height: 40),
              
-             // 네온 원형 타이머
+             // ?�온 ?�형 ?�?�머
              Container(
                width: 240,
                height: 240,
@@ -921,12 +921,12 @@ class _MainScreenState extends State<MainScreen> {
              
              const SizedBox(height: 50),
              
-             // 통계 정보 - 네온 스타일
+             // ?�계 ?�보 - ?�온 ?��???
              Row(
                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                children: [
                  _buildNeonStat("거리", "${_distKm.toStringAsFixed(2)}", "km"),
-                 _buildNeonStat("페이스", _pace, "/km"),
+                 _buildNeonStat("?�이??, _pace, "/km"),
                ],
              ),
              
@@ -938,11 +938,11 @@ class _MainScreenState extends State<MainScreen> {
              
              const SizedBox(height: 50),
              
-             // 컨트롤 버튼 - 네온 원형 버튼
+             // 컨트�?버튼 - ?�온 ?�형 버튼
              Row(
                mainAxisAlignment: MainAxisAlignment.center,
                children: [
-                 // 오디오 ON/OFF 버튼
+                 // ?�디??ON/OFF 버튼
                  Container(
                    width: 50,
                    height: 50,
@@ -965,13 +965,13 @@ class _MainScreenState extends State<MainScreen> {
                        setState(() {
                          _isVoiceOn = !_isVoiceOn;
                        });
-                       _tts.speak(_isVoiceOn ? "오디오 코칭을 켭니다." : "오디오 코칭을 끕니다.");
+                       _tts.speak(_isVoiceOn ? "?�디??코칭??�?��??" : "?�디??코칭???�니??");
                      },
                    ),
                  ),
                  const SizedBox(width: 30),
                  
-                 // 재생/정지 버튼 - 네온 글로우
+                 // ?�생/?��? 버튼 - ?�온 글로우
                  GestureDetector(
                    onTap: _toggleRun,
                    child: Container(
@@ -1001,7 +1001,7 @@ class _MainScreenState extends State<MainScreen> {
                  ),
                  
                  const SizedBox(width: 30),
-                 // 대칭을 위한 빈 공간
+                 // ?��?�� ?�한 �?공간
                  const SizedBox(width: 50, height: 50),
                ],
              )
@@ -1011,7 +1011,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
   
-  // 네온 스타일 통계 표시
+  // ?�온 ?��????�계 ?�시
   Widget _buildNeonStat(String label, String value, String unit) {
     return Column(
       children: [
@@ -1065,12 +1065,12 @@ class _MainScreenState extends State<MainScreen> {
 
   void _toggleRun() async {
     if (_isRunning) {
-      // 멈춤 -> 저장 확인
+      // 멈춤 -> ?�???�인
       bool? confirm = await showDialog(
         context: context, 
         builder: (ctx) => AlertDialog(
-          title: const Text("러닝 종료"),
-          content: const Text("기록을 저장하고 끝내시겠습니까?"),
+          title: const Text("?�닝 종료"),
+          content: const Text("기록???�?�하�??�내?�겠?�니�?"),
           actions: [
              TextButton(onPressed: ()=>Navigator.pop(ctx, false), child: const Text("취소")),
              TextButton(onPressed: ()=>Navigator.pop(ctx, true), child: const Text("종료")),
@@ -1082,7 +1082,7 @@ class _MainScreenState extends State<MainScreen> {
           _timer?.cancel();
           _positionStream?.cancel();
           
-          // 저장 중 로딩 표시
+          // ?�??�?로딩 ?�시
           showDialog(
             context: context,
             barrierDismissible: false,
@@ -1092,18 +1092,18 @@ class _MainScreenState extends State<MainScreen> {
           await _uploadRunData();
           
           if (mounted) {
-             Navigator.pop(context); // 로딩 닫기
+             Navigator.pop(context); // 로딩 ?�기
           }
 
           setState(() => _isRunning = false);
       }
     } else {
-      // 시작
+      // ?�작
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-             if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("GPS 권한이 필요합니다.")));
+             if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("GPS 권한???�요?�니??")));
              return;
         }
       }
@@ -1112,28 +1112,28 @@ class _MainScreenState extends State<MainScreen> {
         _isRunning = true;
         _seconds = 0;
         _distKm = 0.0;
-        _gpsStatus = "GPS 수신 중...";
+        _gpsStatus = "GPS ?�신 �?..";
       });
       
-      if (_isVoiceOn) _tts.speak("러닝을 시작합니다. 1분마다 페이스를 알려드릴게요.");
+      if (_isVoiceOn) _tts.speak("?�닝???�작?�니?? 1분마???�이?��? ?�려?�릴게요.");
 
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
         setState(() => _seconds++);
         
-        // 🚀 1분(60초)마다 AI 코칭 실행
+        // ?? 1�?60�?마다 AI 코칭 ?�행
         if (_seconds > 0 && _seconds % 60 == 0 && _isVoiceOn) {
             _runAiCoaching();
         }
       });
       
-      // 향상된 GPS 설정
+      // ?�상??GPS ?�정
       LocationSettings locationSettings;
       if (Platform.isAndroid) {
         locationSettings = AndroidSettings(
             accuracy: LocationAccuracy.bestForNavigation,
-            distanceFilter: 2, // 2미터마다 갱신 (더 자주 받아옴)
+            distanceFilter: 2, // 2미터마다 갱신 (???�주 받아??
             forceLocationManager: true,
-            intervalDuration: const Duration(milliseconds: 1000), // 1초마다 강제 갱신 시도
+            intervalDuration: const Duration(milliseconds: 1000), // 1초마??강제 갱신 ?�도
         );
       } else if (Platform.isIOS) {
         locationSettings = AppleSettings(
@@ -1153,27 +1153,27 @@ class _MainScreenState extends State<MainScreen> {
       Position? lastPos;
       _positionStream = Geolocator.getPositionStream(locationSettings: locationSettings).listen((Position? position) {
           if (position != null) {
-              // 정확도가 나쁜 신호(오차 30m 이상)는 무시 (실내 등 튈 때 방지)
+              // ?�확?��? ?�쁜 ?�호(?�차 30m ?�상)??무시 (?�내 ??????방�?)
               if (position.accuracy > 30.0) {
-                 // accuracy가 안좋으면 무시하되, UI에만 표시해줄 수 있음
-                 setState(() => _gpsStatus = "GPS 신호 약함: ±${position.accuracy.toInt()}m");
+                 // accuracy가 ?�좋?�면 무시?�되, UI?�만 ?�시?�줄 ???�음
+                 setState(() => _gpsStatus = "GPS ?�호 ?�함: ±${position.accuracy.toInt()}m");
                  return;
               }
 
               if (lastPos != null) {
                   double d = Geolocator.distanceBetween(lastPos!.latitude, lastPos!.longitude, position.latitude, position.longitude) / 1000.0;
                   
-                  // 너무 미세한 움직임(노이즈)은 무시하되, 빠른 걸음(초속 1m=0.001km) 이상은 잡아야 함.
-                  // 1초 간격 갱신이면 2m/s = 7.2km/h. 
+                  // ?�무 미세???�직임(?�이�??� 무시?�되, 빠른 걸음(초속 1m=0.001km) ?�상?� ?�아????
+                  // 1�?간격 갱신?�면 2m/s = 7.2km/h. 
                   // 0.002km = 2m. 
-                  // 튀는 값(순간이동 100m) 필터링
+                  // ?�??�??�간?�동 100m) ?�터�?
                   if (d > 0.002 && d < 0.1) { 
                       setState(() {
                           _distKm += d;
                           if (_distKm > 0) {
                               double paceVal = (_seconds / 60) / _distKm;
                               int pm = paceVal.toInt();
-                              // 페이스가 비정상적으로 크면(멈춤 등) 처리
+                              // ?�이?��? 비정?�적?�로 ?�면(멈춤 ?? 처리
                               if (pm < 30) { 
                                 int ps = ((paceVal - pm) * 60).toInt();
                                 _pace = "$pm'${ps.toString().padLeft(2,'0')}\"";
@@ -1182,7 +1182,7 @@ class _MainScreenState extends State<MainScreen> {
                       });
                   }
               }
-              // 상태 업데이트
+              // ?�태 ?�데?�트
               setState(() {
                  _gpsStatus = "GPS: ±${position.accuracy.toInt()}m";
               });
@@ -1192,23 +1192,23 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
   
-  // 🎙️ AI 보이스 코칭 함수
+  // ?���?AI 보이??코칭 ?�수
   Future<void> _runAiCoaching() async {
-      // 1. 단순 정보 알림 (즉시 실행)
-      String baseMsg = "${(_seconds ~/ 60)}분 경과. 현재 페이스 $_pace 입니다.";
+      // 1. ?�순 ?�보 ?�림 (즉시 ?�행)
+      String baseMsg = "${(_seconds ~/ 60)}�?경과. ?�재 ?�이??$_pace ?�니??";
       await _tts.speak(baseMsg);
       
-      // 2. Gemini에게 조언 요청 (비동기)
-      // 너무 자주 호출하면 안되므로 2분 간격 혹은 필요시 호출 등 조정 가능하나, 요청대로 1분마다 호출.
+      // 2. Gemini?�게 조언 ?�청 (비동�?
+      // ?�무 ?�주 ?�출?�면 ?�되므�?2�?간격 ?��? ?�요???�출 ??조정 가?�하?? ?�청?��?1분마???�출.
       try {
-          String type = _currentRun?['type'] ?? "자유 달리기";
-          String prompt = "러너가 $type 중입니다. 1분간 달렸고 현재 페이스는 $_pace 입니다. 짧게 한 문장으로 격려나 속도 조언해줘. (반말 금지, 코치 톤으로)";
+          String type = _currentRun?['type'] ?? "?�유 ?�리�?;
+          String prompt = "?�너가 $type 중입?�다. 1분간 ?�렸�??�재 ?�이?�는 $_pace ?�니?? 짧게 ??문장?�로 격려???�도 조언?�줘. (반말 금�?, 코치 ?�으�?";
           
           final content = [Content.text(prompt)];
           final response = await _geminiModel.generateContent(content);
           
           if (response.text != null) {
-              await Future.delayed(const Duration(seconds: 4)); // 앞 메시지 끝나길 기다림 (대략)
+              await Future.delayed(const Duration(seconds: 4)); // ??메시지 ?�나�?기다�?(?�??
               await _tts.speak(response.text!);
           }
       } catch (e) {
@@ -1227,12 +1227,12 @@ class _MainScreenState extends State<MainScreen> {
           };
           await Supabase.instance.client.from('run_logs').insert(data);
           
-          // 📊 적응형 알고리즘: 러닝 완료 후 VDOT 재계산 및 플랜 조정
+          // ?�� ?�응???�고리즘: ?�닝 ?�료 ??VDOT ?�계??�??�랜 조정
           await _adjustTrainingPlan(_distKm, _seconds / 60.0);
       } catch (e) {
-          // Supabase 테이블이 없어도 로컬 데이터는 유지됨
+          // Supabase ?�이블이 ?�어??로컬 ?�이?�는 ?��???
           print("INFO: Supabase sync skipped - $e");
-          // 로컬 적응형 알고리즘은 계속 실행
+          // 로컬 ?�응???�고리즘?� 계속 ?�행
           try {
             await _adjustTrainingPlan(_distKm, _seconds / 60.0);
           } catch (e2) {
@@ -1240,7 +1240,7 @@ class _MainScreenState extends State<MainScreen> {
           }
       }
       
-      // ✅ 현재 훈련을 플랜에서 완료로 표시
+      // ???�재 ?�련???�랜?�서 ?�료�??�시
       if (_currentRun != null) {
         setState(() {
           _currentRun!['completed'] = true;
@@ -1249,14 +1249,14 @@ class _MainScreenState extends State<MainScreen> {
         });
       }
       
-      // 항상 성공 메시지 표시 (Supabase 동기화 실패해도 로컬 데이터는 유효)
+      // ??�� ?�공 메시지 ?�시 (Supabase ?�기???�패?�도 로컬 ?�이?�는 ?�효)
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               _currentRun != null 
-                ? "✅ 기록 저장 완료! 플랜 업데이트됨"
-                : "✅ 기록 저장 완료!"
+                ? "??기록 ?�???�료! ?�랜 ?�데?�트??
+                : "??기록 ?�???�료!"
             ), 
             backgroundColor: Colors.teal
           )
@@ -1264,20 +1264,20 @@ class _MainScreenState extends State<MainScreen> {
       }
   }
   
-  // 🔄 적응형 알고리즘: 훈련 플랜 자동 조정
+  // ?�� ?�응???�고리즘: ?�련 ?�랜 ?�동 조정
   Future<void> _adjustTrainingPlan(double distKm, double timeMin) async {
     if (_plan.isEmpty || distKm < 1.0) return;
     
-    // 1. 현재 러닝 기반 VDOT 계산
+    // 1. ?�재 ?�닝 기반 VDOT 계산
     double newVDOT = _calculateVDOT(distKm, timeMin);
     double oldVDOT = _trainingProgress['currentVDOT'] ?? 0.0;
     
-    // 2. VDOT 변화율 확인
+    // 2. VDOT 변?�율 ?�인
     double vdotChange = ((newVDOT - oldVDOT) / oldVDOT) * 100;
     
-    print("📊 VDOT 변화: $oldVDOT -> $newVDOT (${vdotChange.toStringAsFixed(1)}%)");
+    print("?�� VDOT 변?? $oldVDOT -> $newVDOT (${vdotChange.toStringAsFixed(1)}%)");
     
-    // 3. 현재 훈련 완료 처리
+    // 3. ?�재 ?�련 ?�료 처리
     if (_currentRun != null) {
       _trainingProgress['completedRuns'].add({
         'date': DateTime.now().toIso8601String(),
@@ -1286,7 +1286,7 @@ class _MainScreenState extends State<MainScreen> {
         'vdot': newVDOT,
       });
       
-      // 현재 주차의 해당 훈련을 완료로 표시
+      // ?�재 주차???�당 ?�련???�료�??�시
       for (var week in _plan) {
         for (var run in week['runs']) {
           if (run['type'] == _currentRun!['type'] && run['day'] == _currentRun!['day']) {
@@ -1296,12 +1296,12 @@ class _MainScreenState extends State<MainScreen> {
       }
     }
     
-    // 4. 주간 완료율 계산
+    // 4. 주간 ?�료??계산
     int completedCount = (_trainingProgress['completedRuns'] as List).length;
     int expectedRuns = _plan.isNotEmpty ? _plan[0]['runs'].length : 3;
     _trainingProgress['weeklyCompletionRate'] = completedCount > 0 ? (completedCount % expectedRuns) / expectedRuns : 0.0;
     
-    // 5. 페이스가 크게 개선되었다면 (5% 이상) -> 플랜 난이도 상향
+    // 5. ?�이?��? ?�게 개선?�었?�면 (5% ?�상) -> ?�랜 ?�이???�향
     if (vdotChange > 5.0 && completedCount >= 3) {
       _trainingProgress['currentVDOT'] = newVDOT;
       await _regeneratePlanWithNewVDOT(newVDOT);
@@ -1309,48 +1309,48 @@ class _MainScreenState extends State<MainScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("🎉 실력이 향상되었습니다! 플랜이 자동 조정되었습니다. (VDOT: ${newVDOT.toStringAsFixed(1)})"),
+            content: Text("?�� ?�력???�상?�었?�니?? ?�랜???�동 조정?�었?�니?? (VDOT: ${newVDOT.toStringAsFixed(1)})"),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 4),
           )
         );
       }
     }
-    // 6. 페이스가 크게 저하되었거나 (10% 이상) 훈련을 많이 빼먹었다면 -> 플랜 난이도 하향
+    // 6. ?�이?��? ?�게 ?�?�되?�거??(10% ?�상) ?�련??많이 빼먹?�다�?-> ?�랜 ?�이???�향
     else if (vdotChange < -10.0 || _trainingProgress['missedDays'] > 5) {
-      _trainingProgress['currentVDOT'] = newVDOT * 0.95; // 약간 낮춰서 안전하게
+      _trainingProgress['currentVDOT'] = newVDOT * 0.95; // ?�간 ??��???�전?�게
       await _regeneratePlanWithNewVDOT(_trainingProgress['currentVDOT']);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text("⚠️ 컨디션에 맞춰 플랜이 재조정되었습니다. 무리하지 마세요!"),
+            content: const Text("?�️ 컨디?�에 맞춰 ?�랜???�조?�되?�습?�다. 무리?��? 마세??"),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 4),
           )
         );
       }
     }
-    // 7. 정상 범위 내라면 점진적 업데이트
+    // 7. ?�상 범위 ?�라�??�진???�데?�트
     else {
-      // 이동평균으로 부드럽게 업데이트
+      // ?�동?�균?�로 부?�럽�??�데?�트
       _trainingProgress['currentVDOT'] = (oldVDOT * 0.8) + (newVDOT * 0.2);
     }
   }
   
-  // 🔄 새로운 VDOT 기반으로 남은 플랜 재생성
+  // ?�� ?�로??VDOT 기반?�로 ?��? ?�랜 ?�생??
   Future<void> _regeneratePlanWithNewVDOT(double newVDOT) async {
     if (_plan.isEmpty) return;
     
     int currentWeek = 1;
-    // 완료된 주차 찾기
+    // ?�료??주차 찾기
     for (int i = 0; i < _plan.length; i++) {
       if (_plan[i]['completed'] == true) {
-        currentWeek = i + 2; // 다음 주부터
+        currentWeek = i + 2; // ?�음 주�???
       }
     }
     
-    // 남은 주차만 재생성
+    // ?��? 주차�??�생??
     int totalWeeks = _plan.length;
     for (int i = currentWeek - 1; i < totalWeeks; i++) {
       int week = i + 1;
@@ -1367,22 +1367,22 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
   
-  // 📅 누락된 훈련 감지 (백그라운드에서 주기적으로 호출 가능)
+  // ?�� ?�락???�련 감�? (백그?�운?�에??주기?�으�??�출 가??
   void _checkMissedTrainings() {
     if (_plan.isEmpty) return;
     
     DateTime now = DateTime.now();
     int missedCount = 0;
     
-    // 이번 주 훈련 확인
+    // ?�번 �??�련 ?�인
     var thisWeek = _plan.first;
     for (var run in thisWeek['runs']) {
       if (run['completed'] != true) {
-        // 요일 확인 로직 (간단히 구현)
+        // ?�일 ?�인 로직 (간단??구현)
         String day = run['day'];
         int targetWeekday = _getDayOfWeek(day);
         
-        // 현재 요일보다 과거라면 누락
+        // ?�재 ?�일보다 과거?�면 ?�락
         if (now.weekday > targetWeekday) {
           missedCount++;
         }
@@ -1391,24 +1391,24 @@ class _MainScreenState extends State<MainScreen> {
     
     if (missedCount > 0) {
       _trainingProgress['missedDays'] = (_trainingProgress['missedDays'] ?? 0) + missedCount;
-      print("⚠️ 누락된 훈련: $missedCount개");
+      print("?�️ ?�락???�련: $missedCount�?);
     }
   }
   
   int _getDayOfWeek(String day) {
     switch(day) {
-      case '월': return 1;
-      case '화': return 2;
-      case '수': return 3;
-      case '목': return 4;
-      case '금': return 5;
-      case '토': return 6;
-      case '일': return 7;
+      case '??: return 1;
+      case '??: return 2;
+      case '??: return 3;
+      case '�?: return 4;
+      case '�?: return 5;
+      case '??: return 6;
+      case '??: return 7;
       default: return 1;
     }
   }
 
-  // --- 3. 플랜 페이지 ---
+  // --- 3. ?�랜 ?�이지 ---
   Widget _buildPlanPage() {
     if (_plan.isEmpty) {
       return Container(
@@ -1421,14 +1421,14 @@ class _MainScreenState extends State<MainScreen> {
         ),
         child: const Center(
           child: Text(
-            "설정 탭에서 플랜을 생성하세요.",
+            "?�정 ??��???�랜???�성?�세??",
             style: TextStyle(color: Colors.white30, fontSize: 14),
           ),
         ),
       );
     }
     
-    // 1주차 vs 나머지
+    // 1주차 vs ?�머지
     var thisWeek = _plan.first;
     var futureWeeks = _plan.length > 1 ? _plan.sublist(1) : [];
 
@@ -1459,7 +1459,7 @@ class _MainScreenState extends State<MainScreen> {
             ),
             const SizedBox(height: 15),
             
-            // 📊 주간 진행 상황 - 네온 스타일
+            // ?�� 주간 진행 ?�황 - ?�온 ?��???
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1479,7 +1479,7 @@ class _MainScreenState extends State<MainScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("주간 완료율", style: TextStyle(color: Colors.white54, fontSize: 13)),
+                      const Text("주간 ?�료??, style: TextStyle(color: Colors.white54, fontSize: 13)),
                       Text(
                         _getWeeklyCompletionText(),
                         style: const TextStyle(
@@ -1507,7 +1507,7 @@ class _MainScreenState extends State<MainScreen> {
                         Icon(Icons.trending_up, color: const Color(0xFF00FFF0).withOpacity(0.7), size: 15),
                         const SizedBox(width: 5),
                         Text(
-                          "현재 VDOT: ${(_trainingProgress['currentVDOT'] ?? 0.0).toStringAsFixed(1)}",
+                          "?�재 VDOT: ${(_trainingProgress['currentVDOT'] ?? 0.0).toStringAsFixed(1)}",
                           style: const TextStyle(color: Colors.white54, fontSize: 11),
                         ),
                       ],
@@ -1518,7 +1518,7 @@ class _MainScreenState extends State<MainScreen> {
                           const Icon(Icons.warning_amber, color: Color(0xFFFF6B35), size: 15),
                           const SizedBox(width: 5),
                           Text(
-                            "누락: ${_trainingProgress['missedDays']}일",
+                            "?�락: ${_trainingProgress['missedDays']}??,
                             style: const TextStyle(color: Color(0xFFFF6B35), fontSize: 11),
                           ),
                         ],
@@ -1531,12 +1531,12 @@ class _MainScreenState extends State<MainScreen> {
           
           const SizedBox(height: 15),
           
-          // 1주차는 기본적으로 펼쳐서 보여줌
+          // 1주차??기본?�으�??�쳐??보여�?
           _buildWeekCard(thisWeek, initiallyExpanded: true),
           
           const SizedBox(height: 20),
           
-          // AI 코칭 멘트 - 적응형 알고리즘 설명 강화
+          // AI 코칭 멘트 - ?�응???�고리즘 ?�명 강화
           Container(
             padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
@@ -1553,7 +1553,7 @@ class _MainScreenState extends State<MainScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        "🤖 적응형 AI 트레이닝 시스템",
+                        "?�� ?�응??AI ?�레?�닝 ?�스??,
                         style: TextStyle(color: Colors.teal.shade100, fontSize: 14, fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -1561,10 +1561,10 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "• Jack Daniels VDOT 알고리즘 기반\n"
-                  "• 훈련 누락 시 자동 난이도 조정\n"
-                  "• 페이스 개선 감지하여 플랜 상향\n"
-                  "• 실시간 체력 지수 추적 및 조정",
+                  "??Jack Daniels VDOT ?�고리즘 기반\n"
+                  "???�련 ?�락 ???�동 ?�이??조정\n"
+                  "???�이??개선 감�??�여 ?�랜 ?�향\n"
+                  "???�시�?체력 지??추적 �?조정",
                   style: TextStyle(color: Colors.teal.shade100.withOpacity(0.8), fontSize: 12, height: 1.5),
                 ),
               ],
@@ -1573,16 +1573,16 @@ class _MainScreenState extends State<MainScreen> {
           
           const SizedBox(height: 30),
           
-          // 나머지 훈련 (접기/펼치기)
+          // ?�머지 ?�련 (?�기/?�치�?
           if (futureWeeks.isNotEmpty)
             Card(
-              color: Colors.white12, // 배경 약간 다르게
+              color: Colors.white12, // 배경 ?�간 ?�르�?
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               child: ExpansionTile(
                 iconColor: Colors.white70,
                 collapsedIconColor: Colors.white54,
                 title: Text(
-                  "이후 훈련 일정 (${futureWeeks.length}주)", 
+                  "?�후 ?�련 ?�정 (${futureWeeks.length}�?", 
                   style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)
                 ),
                 children: futureWeeks.map((w) => _buildWeekCard(w)).toList(),
@@ -1621,19 +1621,23 @@ class _MainScreenState extends State<MainScreen> {
            subtitle: Text(r['desc'], style: const TextStyle(color: Colors.white70)),
            trailing: Text("${r['dist']} km", style: const TextStyle(color: Colors.tealAccent)),
            onTap: () {
-             // 목표 설정
+             // 목표 ?�정
              setState(() {
                  _currentRun = r;
                  _selectedIndex = 1; // Go to Run tab
              });
-             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("오늘의 목표: ${r['type']} 설정됨!")));
+             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("?�늘??목표: ${r['type']} ?�정??")));
+           },
+           onLongPress: () {
+             // 길게 ?�러??직접 기록 ?�력
+             _showManualInputDialog(r);
            },
         )).toList(),
       ),
     );
   }
   
-  // 📊 주간 완료율 계산
+  // ?�� 주간 ?�료??계산
   double _getWeeklyCompletionRate() {
     if (_plan.isEmpty) return 0.0;
     
@@ -1653,4 +1657,213 @@ class _MainScreenState extends State<MainScreen> {
     int completed = runs.where((r) => r['completed'] == true).length;
     return "$completed/${runs.length}";
   }
-}
+  // ?�� 직접 기록 ?�력 ?�이?�로�?
+  void _showManualInputDialog(Map<String, dynamic> run) {
+    final distController = TextEditingController();
+    final timeController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A2A3A),
+        title: Row(
+          children: [
+            const Icon(Icons.edit, color: Color(0xFF00FFF0), size: 20),
+            const SizedBox(width: 8),
+            Text(
+              '${run['type']} 기록 ?�력',
+              style: const TextStyle(color: Colors.white, fontSize: 18),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: distController,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: '거리 (km)',
+                labelStyle: const TextStyle(color: Color(0xFF00FFF0)),
+                hintText: '?? 5.2',
+                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                enabledBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF00FFF0)),
+                ),
+                focusedBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF00FFF0), width: 2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: timeController,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: '?�간 (�?',
+                labelStyle: const TextStyle(color: Color(0xFF00FFF0)),
+                hintText: '?? 30',
+                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                enabledBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF00FFF0)),
+                ),
+                focusedBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF00FFF0), width: 2),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final dist = double.tryParse(distController.text);
+              final time = int.tryParse(timeController.text);
+              
+              if (dist != null && time != null) {
+                setState(() {
+                  run['completed'] = true;
+                  run['actualDist'] = dist;
+                  run['actualTime'] = time * 60;
+                });
+                
+                Navigator.pop(context);
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('??${run['type']} 기록 ?�?�됨 (${dist}km, ${time}�?'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('???�바�??�자�??�력?�주?�요'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00FFF0),
+              foregroundColor: const Color(0xFF0F0F1E),
+            ),
+            child: const Text('?�??, style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+}    / /   ? w�  �����  rnլ	�  ? ��0�  ? |1 �? ���9m?  
+     v o i d   _ s h o w M a n u a l I n p u t D i a l o g ( M a p < S t r i n g ,   d y n a m i c >   r u n )   {  
+         f i n a l   d i s t C o n t r o l l e r   =   T e x t E d i t i n g C o n t r o l l e r ( ) ;  
+         f i n a l   t i m e C o n t r o l l e r   =   T e x t E d i t i n g C o n t r o l l e r ( ) ;  
+          
+         s h o w D i a l o g (  
+             c o n t e x t :   c o n t e x t ,  
+             b u i l d e r :   ( c o n t e x t )   = >   A l e r t D i a l o g (  
+                 b a c k g r o u n d C o l o r :   c o n s t   C o l o r ( 0 x F F 1 A 2 A 3 A ) ,  
+                 t i t l e :   R o w (  
+                     c h i l d r e n :   [  
+                         c o n s t   I c o n ( I c o n s . e d i t ,   c o l o r :   C o l o r ( 0 x F F 0 0 F F F 0 ) ,   s i z e :   2 0 ) ,  
+                         c o n s t   S i z e d B o x ( w i d t h :   8 ) ,  
+                         T e x t (  
+                             ' $ { r u n [ ' t y p e ' ] }   rnլ	�  ? ��0�' ,  
+                             s t y l e :   c o n s t   T e x t S t y l e ( c o l o r :   C o l o r s . w h i t e ,   f o n t S i z e :   1 8 ) ,  
+                         ) ,  
+                     ] ,  
+                 ) ,  
+                 c o n t e n t :   C o l u m n (  
+                     m a i n A x i s S i z e :   M a i n A x i s S i z e . m i n ,  
+                     c h i l d r e n :   [  
+                         T e x t F i e l d (  
+                             c o n t r o l l e r :   d i s t C o n t r o l l e r ,  
+                             k e y b o a r d T y p e :   T e x t I n p u t T y p e . n u m b e r ,  
+                             s t y l e :   c o n s t   T e x t S t y l e ( c o l o r :   C o l o r s . w h i t e ) ,  
+                             d e c o r a t i o n :   I n p u t D e c o r a t i o n (  
+                                 l a b e l T e x t :   ' �Zլ%  ( k m ) ' ,  
+                                 l a b e l S t y l e :   c o n s t   T e x t S t y l e ( c o l o r :   C o l o r ( 0 x F F 0 0 F F F 0 ) ) ,  
+                                 h i n t T e x t :   ' ? ?   5 . 2 ' ,  
+                                 h i n t S t y l e :   T e x t S t y l e ( c o l o r :   C o l o r s . w h i t e . w i t h O p a c i t y ( 0 . 3 ) ) ,  
+                                 e n a b l e d B o r d e r :   c o n s t   U n d e r l i n e I n p u t B o r d e r (  
+                                     b o r d e r S i d e :   B o r d e r S i d e ( c o l o r :   C o l o r ( 0 x F F 0 0 F F F 0 ) ) ,  
+                                 ) ,  
+                                 f o c u s e d B o r d e r :   c o n s t   U n d e r l i n e I n p u t B o r d e r (  
+                                     b o r d e r S i d e :   B o r d e r S i d e ( c o l o r :   C o l o r ( 0 x F F 0 0 F F F 0 ) ,   w i d t h :   2 ) ,  
+                                 ) ,  
+                             ) ,  
+                         ) ,  
+                         c o n s t   S i z e d B o x ( h e i g h t :   1 6 ) ,  
+                         T e x t F i e l d (  
+                             c o n t r o l l e r :   t i m e C o n t r o l l e r ,  
+                             k e y b o a r d T y p e :   T e x t I n p u t T y p e . n u m b e r ,  
+                             s t y l e :   c o n s t   T e x t S t y l e ( c o l o r :   C o l o r s . w h i t e ) ,  
+                             d e c o r a t i o n :   I n p u t D e c o r a t i o n (  
+                                 l a b e l T e x t :   ' ? ����  ( z�? ' ,  
+                                 l a b e l S t y l e :   c o n s t   T e x t S t y l e ( c o l o r :   C o l o r ( 0 x F F 0 0 F F F 0 ) ) ,  
+                                 h i n t T e x t :   ' ? ?   3 0 ' ,  
+                                 h i n t S t y l e :   T e x t S t y l e ( c o l o r :   C o l o r s . w h i t e . w i t h O p a c i t y ( 0 . 3 ) ) ,  
+                                 e n a b l e d B o r d e r :   c o n s t   U n d e r l i n e I n p u t B o r d e r (  
+                                     b o r d e r S i d e :   B o r d e r S i d e ( c o l o r :   C o l o r ( 0 x F F 0 0 F F F 0 ) ) ,  
+                                 ) ,  
+                                 f o c u s e d B o r d e r :   c o n s t   U n d e r l i n e I n p u t B o r d e r (  
+                                     b o r d e r S i d e :   B o r d e r S i d e ( c o l o r :   C o l o r ( 0 x F F 0 0 F F F 0 ) ,   w i d t h :   2 ) ,  
+                                 ) ,  
+                             ) ,  
+                         ) ,  
+                     ] ,  
+                 ) ,  
+                 a c t i o n s :   [  
+                     T e x t B u t t o n (  
+                         o n P r e s s e d :   ( )   = >   N a v i g a t o r . p o p ( c o n t e x t ) ,  
+                         c h i l d :   c o n s t   T e x t ( ' �ue$��' ,   s t y l e :   T e x t S t y l e ( c o l o r :   C o l o r s . w h i t e 5 4 ) ) ,  
+                     ) ,  
+                     E l e v a t e d B u t t o n (  
+                         o n P r e s s e d :   ( )   {  
+                             f i n a l   d i s t   =   d o u b l e . t r y P a r s e ( d i s t C o n t r o l l e r . t e x t ) ;  
+                             f i n a l   t i m e   =   i n t . t r y P a r s e ( t i m e C o n t r o l l e r . t e x t ) ;  
+                              
+                             i f   ( d i s t   ! =   n u l l   & &   t i m e   ! =   n u l l )   {  
+                                 s e t S t a t e ( ( )   {  
+                                     r u n [ ' c o m p l e t e d ' ]   =   t r u e ;  
+                                     r u n [ ' a c t u a l D i s t ' ]   =   d i s t ;  
+                                     r u n [ ' a c t u a l T i m e ' ]   =   t i m e   *   6 0 ;  
+                                 } ) ;  
+                                  
+                                 N a v i g a t o r . p o p ( c o n t e x t ) ;  
+                                  
+                                 S c a f f o l d M e s s e n g e r . o f ( c o n t e x t ) . s h o w S n a c k B a r (  
+                                     S n a c k B a r (  
+                                         c o n t e n t :   T e x t ( ' ? ? $ { r u n [ ' t y p e ' ] }   rnլ	�  ? � ? �ֹ  ( $ { d i s t } k m ,   $ { t i m e } z�? ' ) ,  
+                                         b a c k g r o u n d C o l o r :   C o l o r s . g r e e n ,  
+                                     ) ,  
+                                 ) ;  
+                             }   e l s e   {  
+                                 S c a f f o l d M e s s e n g e r . o f ( c o n t e x t ) . s h o w S n a c k B a r (  
+                                     c o n s t   S n a c k B a r (  
+                                         c o n t e n t :   T e x t ( ' ? ? ? I��\t? ? �0�\t? ? ��0�? ��? ����' ) ,  
+                                         b a c k g r o u n d C o l o r :   C o l o r s . r e d ,  
+                                     ) ,  
+                                 ) ;  
+                             }  
+                         } ,  
+                         s t y l e :   E l e v a t e d B u t t o n . s t y l e F r o m (  
+                             b a c k g r o u n d C o l o r :   c o n s t   C o l o r ( 0 x F F 0 0 F F F 0 ) ,  
+                             f o r e g r o u n d C o l o r :   c o n s t   C o l o r ( 0 x F F 0 F 0 F 1 E ) ,  
+                         ) ,  
+                         c h i l d :   c o n s t   T e x t ( ' ? � ? ? ,   s t y l e :   T e x t S t y l e ( f o n t W e i g h t :   F o n t W e i g h t . b o l d ) ) ,  
+                     ) ,  
+                 ] ,  
+             ) ,  
+         ) ;  
+     }  
+  
+ }  
+ 
