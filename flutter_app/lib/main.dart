@@ -1279,6 +1279,23 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _regeneratePlanWithNewVDOT(double newVDOT) async {
     if (_plan.isEmpty) return;
     
+    // 1. 필요한 변수 계산 (BMI, Volume Modifier)
+    // 컨트롤러 값이 있으면 사용, 없으면 기본값
+    double heightM = (double.tryParse(_heightController.text) ?? 175.0) / 100;
+    double weightKg = double.tryParse(_weightController.text) ?? 70.0;
+    double bmi = weightKg / (heightM * heightM);
+    
+    double volumeModifier = 1.0;
+    if (bmi >= 30) {
+      volumeModifier = 0.5;
+    } else if (bmi >= 25) {
+      volumeModifier = 0.7;
+    }
+    
+    if (_level == "beginner") volumeModifier *= 0.9;
+    
+    int weeklyMinutes = int.tryParse(_weeklyController.text) ?? 120;
+    
     int currentWeek = 1;
     // 완료된 주차 찾기
     for (int i = 0; i < _plan.length; i++) {
@@ -1299,7 +1316,7 @@ class _MainScreenState extends State<MainScreen> {
       
       setState(() {
         _plan[i]['targetVDOT'] = newVDOT;
-        _plan[i]['runs'] = _generateWeekRuns(week, totalWeeks, intensity, easyPace, tempoPace, intervalPace);
+        _plan[i]['runs'] = _generateWeekRuns(week, totalWeeks, intensity, easyPace, tempoPace, intervalPace, volumeModifier, weeklyMinutes);
       });
     }
   }
