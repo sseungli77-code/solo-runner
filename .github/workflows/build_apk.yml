@@ -13,51 +13,52 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install Flet
+      run: |
+        python -m pip install --upgrade pip
+        pip install flet==0.25.2
+
     - name: Setup Java
       uses: actions/setup-java@v3
       with:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-
-    - name: Install Linux Toolchain
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev
-
-    - name: Setup Flutter
+    - name: Setup Flutter  
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.24.x'
+        flutter-version: '3.24.5'
+        channel: 'stable'
 
-    - name: Accept Android Licenses
+    - name: Install Android SDK Components
       run: |
         yes | flutter doctor --android-licenses || true
+        flutter doctor -v
 
-    - name: Flet Build APK
+    - name: Prepare Build
       run: |
-        # Workaround: Copy to main.py standard name
+        # Copy to standard main.py name
         cp main_single.py main.py
         
-        # Debug: List files to confirm main.py exists
+        # Verify structure
         ls -la
-        
-        # Build APK from current directory
-        # We rely on Flet's default behavior to include subdirectories ('server')
-        # Removing --include-packages to avoid misidentifying 'server' as an external package
-        flet build apk . --verbose
+        echo "--- server directory ---"
+        ls -la server/
 
+    - name: Build APK
+      run: |
+        # Build with explicit project root
+        flet build apk --verbose
+      
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-release
-        path: build/app/outputs/flutter-apk/app-release.apk
+        name: solorunner-release
+        path: build/apk/app-release.apk
+        if-no-files-found: error
+
