@@ -51,9 +51,10 @@ jobs:
         # Debug: List files to confirm main.py exists
         ls -la
         
-        # Build APK from current directory (where main.py is located)
-        # Pointing to '.' tells Flet to look for main.py here
-        flet build apk . --include-packages server --verbose
+        # Build APK from current directory
+        # We rely on Flet's default behavior to include subdirectories ('server')
+        # Removing --include-packages to avoid misidentifying 'server' as an external package
+        flet build apk . --verbose
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
