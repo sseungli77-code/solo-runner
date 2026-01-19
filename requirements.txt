@@ -1,7 +1,6 @@
-flet
-fastapi
-uvicorn[standard]
-requests
-supabase
-google-generativeai
-pydantic
+fastapi==0.115.0
+uvicorn==0.32.0
+requests==2.31.0
+supabase==2.3.0
+google-generativeai==0.3.2
+pydantic==2.5.0
