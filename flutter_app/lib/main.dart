@@ -11,6 +11,7 @@ import 'dart:convert';
 
 // Gemini API Key (보안을 위해 실제 배포 시에는 숨겨야 함)
 const String _geminiKey = 'AIzaSyBtEtujomeYnJUc5ZlEi7CteLmapaEZ4MY';
+const String _serverUrl = 'https://solo-runner-api.onrender.com';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
