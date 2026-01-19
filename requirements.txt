@@ -1,4 +1,6 @@
 flet
+fastapi
+uvicorn[standard]
 requests
 supabase
 google-generativeai

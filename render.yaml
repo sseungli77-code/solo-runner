@@ -1,9 +1,13 @@
 services:
   - type: web
-    name: solo-runner
+    name: solo-runner-api
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python main_single.py
+    startCommand: uvicorn server.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.12.0
+        value: 3.11.0
+      - key: GEMINI_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: SUPA_KEY
+        sync: false  # Set manually in Render dashboard
