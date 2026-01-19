@@ -288,8 +288,8 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 15),
         ],
+      ),
       ),
     );
   }
@@ -1339,6 +1339,7 @@ class _MainScreenState extends State<MainScreen> {
             
            const SizedBox(height: 50),
         ],
+      ),
       ),
     );
   }
