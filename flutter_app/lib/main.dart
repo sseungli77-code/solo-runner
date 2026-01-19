@@ -1240,10 +1240,26 @@ class _MainScreenState extends State<MainScreen> {
           }
       }
       
+      // ✅ 현재 훈련을 플랜에서 완료로 표시
+      if (_currentRun != null) {
+        setState(() {
+          _currentRun!['completed'] = true;
+          _currentRun!['actualDist'] = _distKm;
+          _currentRun!['actualTime'] = _seconds;
+        });
+      }
+      
       // 항상 성공 메시지 표시 (Supabase 동기화 실패해도 로컬 데이터는 유효)
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ 기록 저장 완료!"), backgroundColor: Colors.teal)
+          SnackBar(
+            content: Text(
+              _currentRun != null 
+                ? "✅ 기록 저장 완료! 플랜 업데이트됨"
+                : "✅ 기록 저장 완료!"
+            ), 
+            backgroundColor: Colors.teal
+          )
         );
       }
   }
