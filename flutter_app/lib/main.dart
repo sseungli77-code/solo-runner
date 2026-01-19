@@ -1396,6 +1396,29 @@ class _MainScreenState extends State<MainScreen> {
             ),
             const SizedBox(height: 15),
             
+            // 🤖 AI 코치 메시지
+            Container(
+              margin: const EdgeInsets.only(bottom: 20),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2A2A4E).withOpacity(0.5),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFBB86FC).withOpacity(0.5)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.auto_awesome, color: Color(0xFFBB86FC), size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      "AI 코치: 매주 수행 결과를 분석하여 다음 주 프로그램을 자동으로 재조정해 드립니다. 지금처럼만 달려주세요! 🏃‍♂️",
+                      style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13, height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
             // 📊 주간 진행 상황 - 네온 스타일
             Container(
               padding: const EdgeInsets.all(16),
