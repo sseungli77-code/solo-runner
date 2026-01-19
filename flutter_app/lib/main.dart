@@ -61,6 +61,7 @@ class _MainScreenState extends State<MainScreen> {
   final TextEditingController _goalTimeController = TextEditingController(text: "60");
   
   String _level = "beginner";
+  bool _useSelfGoal = false; // 셀프 목표 사용 여부
   
   // State
   List<Map<String, dynamic>> _plan = [];
@@ -209,76 +210,103 @@ class _MainScreenState extends State<MainScreen> {
             ]),
             const SizedBox(height: 20),
             
-            // 🎯 셀프 목표 설정 - 네온 박스
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A3A3A).withOpacity(0.4),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(color: const Color(0xFF00FFF0).withOpacity(0.5), width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF00FFF0).withOpacity(0.2),
-                    blurRadius: 15,
-                    spreadRadius: 1,
+            // 🎯 셀프 목표 설정 - 네온 박스 (토글 기능 추가)
+            InkWell(
+              onTap: () {
+                setState(() {
+                  _useSelfGoal = !_useSelfGoal;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _useSelfGoal 
+                    ? const Color(0xFF1A3A3A).withOpacity(0.6)
+                    : const Color(0xFF1A3A3A).withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: _useSelfGoal 
+                      ? const Color(0xFF00FFF0).withOpacity(0.8)
+                      : const Color(0xFF00FFF0).withOpacity(0.5), 
+                    width: _useSelfGoal ? 2.5 : 2
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.flag_outlined, color: const Color(0xFF00FFF0), size: 20),
-                      const SizedBox(width: 8),
-                      const Text("셀프 목표 설정", 
-                        style: TextStyle(
-                          color: Color(0xFF00FFF0), 
-                          fontWeight: FontWeight.bold, 
-                          fontSize: 15
-                        )
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(children: [
-                    Expanded(child: _buildNeonInput(Icons.straighten, "목표거리", "km", _goalDistanceController)),
-                    const SizedBox(width: 10),
-                    Expanded(child: _buildNeonInput(Icons.timer, "목표시간", "분", _goalTimeController)),
-                  ]),
-                  const SizedBox(height: 10),
-                  Center(
-                    child: Text(
-                      _goalDistanceController.text.isNotEmpty && _goalTimeController.text.isNotEmpty
-                        ? "목표 페이스: ${_calculateTargetPace()}"
-                        : "",
-                      style: const TextStyle(color: Colors.white38, fontSize: 12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00FFF0).withOpacity(_useSelfGoal ? 0.4 : 0.2),
+                      blurRadius: _useSelfGoal ? 20 : 15,
+                      spreadRadius: _useSelfGoal ? 2 : 1,
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          _useSelfGoal ? Icons.check_circle : Icons.flag_outlined, 
+                          color: const Color(0xFF00FFF0), 
+                          size: 20
+                        ),
+                        const SizedBox(width: 8),
+                        const Text("셀프 목표 설정", 
+                          style: TextStyle(
+                            color: Color(0xFF00FFF0), 
+                            fontWeight: FontWeight.bold, 
+                            fontSize: 15
+                          )
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(children: [
+                      Expanded(child: _buildNeonInput(Icons.straighten, "목표거리", "km", _goalDistanceController)),
+                      const SizedBox(width: 10),
+                      Expanded(child: _buildNeonInput(Icons.timer, "목표시간", "분", _goalTimeController)),
+                    ]),
+                    const SizedBox(height: 10),
+                    Center(
+                      child: Text(
+                        _goalDistanceController.text.isNotEmpty && _goalTimeController.text.isNotEmpty
+                          ? "목표 페이스: ${_calculateTargetPace()}"
+                          : "",
+                        style: const TextStyle(color: Colors.white38, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             
             const SizedBox(height: 20),
             
-            // 강도 선택 - 원본 이미지 스타일 (3개 박스)
-            const Text("강도선택", 
-              style: TextStyle(
-                color: Colors.white54, 
-                fontSize: 13, 
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.5
-              )
+            // 강도 선택 - AI 플랜 모드 (셀프 목표 선택 시 비활성화)
+            Opacity(
+              opacity: _useSelfGoal ? 0.3 : 1.0,
+              child: const Text("AI 플랜 강도", 
+                style: TextStyle(
+                  color: Colors.white54, 
+                  fontSize: 13, 
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.5
+                )
+              ),
             ),
             const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(child: _buildLevelBox("beginner", Icons.directions_walk, "입문자", "12주")),
-                const SizedBox(width: 10),
-                Expanded(child: _buildLevelBox("intermediate", Icons.directions_run, "중급자", "24주")),
-                const SizedBox(width: 10),
-                Expanded(child: _buildLevelBox("advanced", Icons.bar_chart, "상급자", "48주")),
-              ],
+            IgnorePointer(
+              ignoring: _useSelfGoal,
+              child: Opacity(
+                opacity: _useSelfGoal ? 0.3 : 1.0,
+                child: Row(
+                  children: [
+                    Expanded(child: _buildLevelBox("beginner", Icons.directions_walk, "입문자", "12주")),
+                    const SizedBox(width: 10),
+                    Expanded(child: _buildLevelBox("intermediate", Icons.directions_run, "중급자", "24주")),
+                    const SizedBox(width: 10),
+                    Expanded(child: _buildLevelBox("advanced", Icons.bar_chart, "상급자", "48주")),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 25),
           ElevatedButton(
