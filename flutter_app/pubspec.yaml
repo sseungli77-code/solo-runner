@@ -16,7 +16,7 @@ dependencies:
   shared_preferences: ^2.2.2 # For local storage
   http: ^1.1.0 # For AI API
   google_generative_ai: ^0.2.2 # Gemini AI
-  fl_chart: ^0.66.0 # For charts
+  fl_chart: ^0.65.0 # For charts
   url_launcher: ^6.2.4 # For opening links
   permission_handler: ^11.3.0 # For permissions
 
