@@ -6,9 +6,14 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'dart:async';
 import 'dart:math';
 import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 // Gemini API Key (보안을 위해 실제 배포 시에는 숨겨야 함)
 const String _geminiKey = 'AIzaSyBtEtujomeYnJUc5ZlEi7CteLmapaEZ4MY';
+
+// Server API URL (과학적 알고리즘 서버)
+const String _serverUrl = 'https://solo-runner-api.onrender.com'; // Render.com 배포 후 URL
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -510,7 +515,6 @@ class _MainScreenState extends State<MainScreen> {
 
   void _generatePlan() async {
     setState(() => _isGenerating = true);
-    await Future.delayed(const Duration(milliseconds: 500));
     
     // 사용자 입력 파싱
     double height = double.tryParse(_heightController.text) ?? 175;
@@ -518,7 +522,7 @@ class _MainScreenState extends State<MainScreen> {
     double weeklyMin = double.tryParse(_weeklyController.text) ?? 120;
     double record10k = double.tryParse(_recordController.text) ?? 60;
     
-    // 🎯 VDOT 계산 (셀프 목표 우선, 아니면 10km 기록 사용)
+    // 🎯 VDOT 계산
     double targetVDOT = 0;
     if (_useSelfGoal) {
       try {
@@ -535,20 +539,88 @@ class _MainScreenState extends State<MainScreen> {
     _trainingProgress['currentVDOT'] = targetVDOT;
     _trainingProgress['lastCalculatedVDOT'] = targetVDOT;
     
-    // 레벨별 설정 (실제로 차이 나게)
+    // 🌐 서버 API 호출 (과학적 알고리즘 사용)
+    try {
+      final response = await http.post(
+        Uri.parse('$_serverUrl/generate'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'level': _level,
+          'record_10km': record10k,
+          'weekly_min': weeklyMin.toInt(),
+          'height': height.toInt(),
+          'weight': weight.toInt(),
+        }),
+      ).timeout(const Duration(seconds: 10));
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        // 서버 응답을 Flutter 형식으로 변환
+        List<Map<String, dynamic>> serverPlan = [];
+        for (var week in data['plan']) {
+          // 서버 형식을 Flutter 형식으로 변환
+          List<Map<String, dynamic>> runs = [];
+          for (var run in week['schedule']) {
+            if (run['dist'] > 0) {
+              runs.add({
+                'day': _translateDay(run['day_nm']),
+                'type': run['type'],
+                'dist': run['dist'].toDouble(),
+                'targetPace': run['pace'].toDouble(),
+                'desc': run['desc'],
+                'completed': false,
+              });
+            }
+          }
+          
+          serverPlan.add({
+            'week': week['week'],
+            'focus': week['focus'],
+            'intensity': week.containsKey('intensity') ? week['intensity'] : 0.5,
+            'targetVDOT': targetVDOT,
+            'completed': false,
+            'runs': runs,
+          });
+        }
+        
+        setState(() {
+          _plan = serverPlan;
+          _isGenerating = false;
+          _selectedIndex = 2; // Move to Plan tab
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("🎯 과학 기반 플랜 생성 완료! (ACSM 가이드라인)"), 
+              backgroundColor: Colors.teal
+            )
+          );
+        }
+        return;
+      }
+    } catch (e) {
+      print('INFO: Server unavailable, using local algorithm - $e');
+    }
+    
+    // 💻 서버 실패 시 로컬 알고리즘 폴백
+    await _generatePlanLocal(targetVDOT, weeklyMin, height, weight);
+  }
+  
+  // 로컬 플랜 생성 (서버 실패 시 폴백)
+  Future<void> _generatePlanLocal(double targetVDOT, double weeklyMin, double height, double weight) async {
+    // 레벨별 설정
     int totalWeeks = _level == "beginner" ? 12 : (_level == "intermediate" ? 24 : 48);
     double baseDistanceMultiplier = _level == "beginner" ? 0.7 : (_level == "intermediate" ? 1.0 : 1.3);
-    double weeklyVolumeKm = (weeklyMin / 60) * 10; // 주간 훈련량을 km로 환산 (시속 10km 가정)
+    double weeklyVolumeKm = (weeklyMin / 60) * 10;
     
-    // 📊 적응형 플랜 생성
     List<Map<String, dynamic>> newPlan = [];
     
     for(int i=1; i<=totalWeeks; i++) {
-        // 주차별 강도 조절 (periodization)
         double intensity = _calculateWeekIntensity(i, totalWeeks);
         String focus = _getWeekFocus(i, totalWeeks);
         
-        // VDOT 기반 페이스 계산
         double easyPace = _getPaceFromVDOT(targetVDOT, 'easy');
         double tempoPace = _getPaceFromVDOT(targetVDOT, 'tempo');
         double intervalPace = _getPaceFromVDOT(targetVDOT, 'interval');
@@ -562,15 +634,27 @@ class _MainScreenState extends State<MainScreen> {
           "runs": _generateWeekRuns(i, totalWeeks, intensity, baseDistanceMultiplier, weeklyVolumeKm, easyPace, tempoPace, intervalPace),
         });
     }
-    }
 
     setState(() {
       _plan = newPlan;
       _isGenerating = false;
-      _selectedIndex = 2; // Move to Plan tab
+      _selectedIndex = 2;
     });
     
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("🎯 목표 기반 플랜 생성 완료! (VDOT: ${targetVDOT.toStringAsFixed(1)})"), backgroundColor: Colors.teal));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("💻 로컬 플랜 생성 완료 (VDOT: ${targetVDOT.toStringAsFixed(1)})"), backgroundColor: Colors.orange)
+      );
+    }
+  }
+  
+  // 요일 명 변환 (English -> Korean)
+  String _translateDay(String dayEn) {
+    const map = {
+      'Mon': '월', 'Tue': '화', 'Wed': '수', 
+      'Thu': '목', 'Fri': '금', 'Sat': '토', 'Sun': '일'
+    };
+    return map[dayEn] ?? dayEn;
   }
   
   // 📊 주차별 강도 계산 (피리어다이제이션)
