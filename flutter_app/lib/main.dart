@@ -630,12 +630,13 @@ class _MainScreenState extends State<MainScreen> {
     if (bmi >= 30) {
       volumeModifier = 0.5;
     } else if (bmi >= 25) {
-      volumeModifier = 0.8;
+      volumeModifier = 0.7; // 서버 로직과 통일 (기존 0.8 -> 0.7)
     }
     
     // 초보자는 기본적으로 약간 적게 시작
     if (_level == "beginner") volumeModifier *= 0.9;
     
+    int weeklyMinutes = int.tryParse(_weeklyController.text) ?? 120; // 주간 훈련량
     int totalWeeks = _level == "beginner" ? 12 : (_level == "intermediate" ? 24 : 48);
     
     for(int i=1; i<=totalWeeks; i++) {
@@ -652,7 +653,7 @@ class _MainScreenState extends State<MainScreen> {
         "intensity": intensity,
         "targetVDOT": targetVDOT,
         "completed": false,
-        "runs": _generateWeekRuns(i, totalWeeks, intensity, easyPace, tempoPace, intervalPace, volumeModifier),
+        "runs": _generateWeekRuns(i, totalWeeks, intensity, easyPace, tempoPace, intervalPace, volumeModifier, weeklyMinutes),
       });
     }
 
@@ -710,40 +711,53 @@ class _MainScreenState extends State<MainScreen> {
     return basePace;
   }
   
-  // 주차별 훈련 생성
-  List<Map<String, dynamic>> _generateWeekRuns(int week, int totalWeeks, double intensity, double easyPace, double tempoPace, double intervalPace, double volumeModifier) {
+  // 주차별 훈련 생성 (서버 로직 100% 이식)
+  List<Map<String, dynamic>> _generateWeekRuns(int week, int totalWeeks, double intensity, double easyPace, double tempoPace, double intervalPace, double volumeModifier, int weeklyMinutes) {
     List<Map<String, dynamic>> runs = [];
     
-    // 기본 3일 훈련
-    double dist1 = (3.0 + (intensity * 2)) * volumeModifier;
+    // 1. 이번 주 총 목표 훈련 시간 (분)
+    double targetMinutes = weeklyMinutes.toDouble() * volumeModifier * intensity;
+    
+    // 2. 요일별 배분 (서버와 동일: 화 25%, 목 35%, 토 40%)
+    double minTue = targetMinutes * 0.25;
+    double minThu = targetMinutes * 0.35;
+    double minSat = targetMinutes * 0.40;
+    
+    // 3. 거리 계산 (시간 / 페이스)
+    // 화요일: Easy Run
+    double distTue = minTue / easyPace;
+    
     runs.add({
       "day": "화",
       "type": "이지런",
-      "dist": double.parse(dist1.toStringAsFixed(1)),
+      "dist": double.parse(distTue.toStringAsFixed(1)),
       "targetPace": easyPace,
       "desc": "편안한 페이스로 (${_formatPace(easyPace)})",
       "completed": false,
     });
     
+    // 목요일: Quality Run or Recovery
     if (week % 4 == 0) {
       // 회복 주
-      double recoveryDist = 3.0 * volumeModifier;
+      double distRecovery = minThu / (easyPace * 1.15); // 더 느린 페이스
       runs.add({
         "day": "목",
         "type": "회복런",
-        "dist": double.parse(recoveryDist.toStringAsFixed(1)),
+        "dist": double.parse(distRecovery.toStringAsFixed(1)),
         "targetPace": easyPace * 1.15,
         "desc": "아주 가볍게 (${_formatPace(easyPace * 1.15)})",
         "completed": false,
       });
     } else {
-      // 일반 주 - 인터벌 또는 템포
-      double qualityDist = (4.0 + (intensity * 1)) * volumeModifier;
+      // 일반 주
+      double targetPace = week % 2 == 0 ? tempoPace : intervalPace;
+      double distThu = minThu / targetPace;
+      
       runs.add({
         "day": "목",
         "type": week % 2 == 0 ? "템포런" : "인터벌",
-        "dist": double.parse(qualityDist.toStringAsFixed(1)),
-        "targetPace": week % 2 == 0 ? tempoPace : intervalPace,
+        "dist": double.parse(distThu.toStringAsFixed(1)),
+        "targetPace": targetPace,
         "desc": week % 2 == 0 
           ? "지속 가능한 빠른 페이스 (${_formatPace(tempoPace)})"
           : "3분 질주 + 2분 회복 반복 (${_formatPace(intervalPace)})",
@@ -751,13 +765,17 @@ class _MainScreenState extends State<MainScreen> {
       });
     }
     
-    double longDist = (5.0 + (week * 0.3)) * volumeModifier;
+    // 토요일: LSD
+    // LSD 페이스는 Easy Pace보다 10% 느림 (시간은 더 오래 걸림)
+    double lsdPace = easyPace * 1.1;
+    double distSat = minSat / lsdPace; 
+    
     runs.add({
       "day": "토",
       "type": "LSD (장거리)",
-      "dist": double.parse(longDist.toStringAsFixed(1)),
-      "targetPace": easyPace * 1.1,
-      "desc": "천천히 오래 달리기 (${_formatPace(easyPace * 1.1)})",
+      "dist": double.parse(distSat.toStringAsFixed(1)),
+      "targetPace": lsdPace,
+      "desc": "천천히 오래 달리기 (${_formatPace(lsdPace)})",
       "completed": false,
     });
     
