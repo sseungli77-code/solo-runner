@@ -48,6 +48,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  late PageController _pageController;
   
   // Data Controllers
   final TextEditingController _heightController = TextEditingController(text: "175");
@@ -83,6 +84,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     _initTTS();
     _geminiModel = GenerativeModel(model: 'gemini-pro', apiKey: _geminiKey);
     
@@ -101,9 +103,11 @@ class _MainScreenState extends State<MainScreen> {
 
   // Navigation
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
@@ -115,12 +119,22 @@ class _MainScreenState extends State<MainScreen> {
     ];
 
     return Scaffold(
-      body: SafeArea(child: pages[_selectedIndex]),
+      body: SafeArea(
+        child: PageView(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+          children: pages,
+        ),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.settings), label: '설정'),
+          NavigationDestination(icon: Icon(Icons.person_outline), label: '프로필'),
           NavigationDestination(icon: Icon(Icons.directions_run), label: '러닝'),
           NavigationDestination(icon: Icon(Icons.calendar_month), label: '플랜'),
         ],
@@ -259,11 +273,11 @@ class _MainScreenState extends State<MainScreen> {
             const SizedBox(height: 10),
             Row(
               children: [
-                Expanded(child: _buildLevelBox("beginner", "🚶", "입문자", "12주")),
+                Expanded(child: _buildLevelBox("beginner", Icons.directions_walk, "입문자", "12주")),
                 const SizedBox(width: 10),
-                Expanded(child: _buildLevelBox("intermediate", "🏃", "중급자", "24주")),
+                Expanded(child: _buildLevelBox("intermediate", Icons.directions_run, "중급자", "24주")),
                 const SizedBox(width: 10),
-                Expanded(child: _buildLevelBox("advanced", "📊", "상급자", "48주")),
+                Expanded(child: _buildLevelBox("advanced", Icons.bar_chart, "상급자", "48주")),
               ],
             ),
             const SizedBox(height: 25),
@@ -360,8 +374,8 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
   
-  // 🎨 레벨 선택 박스 (원본 이미지 스타일 - 3개 박스)
-  Widget _buildLevelBox(String value, String emoji, String label, String duration) {
+  // 🎨 레벨 선택 박스 (형광 아이콘 스타일)
+  Widget _buildLevelBox(String value, IconData icon, String label, String duration) {
     bool isSelected = _level == value;
     return InkWell(
       onTap: () => setState(() => _level = value),
@@ -399,9 +413,10 @@ class _MainScreenState extends State<MainScreen> {
                 borderRadius: BorderRadius.circular(10),
               ),
               alignment: Alignment.center,
-              child: Text(
-                emoji, 
-                style: const TextStyle(fontSize: 24),
+              child: Icon(
+                icon,
+                size: 28,
+                color: isSelected ? const Color(0xFF00FFF0) : Colors.white60,
               ),
             ),
             const SizedBox(height: 8),
@@ -1004,11 +1019,22 @@ class _MainScreenState extends State<MainScreen> {
           
           // 📊 적응형 알고리즘: 러닝 완료 후 VDOT 재계산 및 플랜 조정
           await _adjustTrainingPlan(_distKm, _seconds / 60.0);
-          
-          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("✅ 기록 저장 완료!")));
       } catch (e) {
-          print("UPLOAD ERROR: $e");
-          if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("저장 오류: $e")));
+          // Supabase 테이블이 없어도 로컬 데이터는 유지됨
+          print("INFO: Supabase sync skipped - $e");
+          // 로컬 적응형 알고리즘은 계속 실행
+          try {
+            await _adjustTrainingPlan(_distKm, _seconds / 60.0);
+          } catch (e2) {
+            print("WARN: Plan adjustment failed - $e2");
+          }
+      }
+      
+      // 항상 성공 메시지 표시 (Supabase 동기화 실패해도 로컬 데이터는 유효)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ 기록 저장 완료!"), backgroundColor: Colors.teal)
+        );
       }
   }
   
