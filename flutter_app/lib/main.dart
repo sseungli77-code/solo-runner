@@ -99,29 +99,10 @@ class _MainScreenState extends State<MainScreen> {
     _tts = FlutterTts();
     await _tts.setLanguage("ko-KR");
     
-    // 고급 남자 목소리 설정
-    await _tts.setSpeechRate(0.45); // 약간 느리고 차분하게
-    await _tts.setPitch(0.8); // 낮은 톤 (남성적)
-    await _tts.setVolume(1.0); // 최대 볼륨
-    
-    // 안드로이드: Google TTS 남성 음성 시도
-    try {
-      // 사용 가능한 음성 목록에서 한국어 남성 음성 선택
-      var voices = await _tts.getVoices;
-      if (voices != null) {
-        // "ko-kr-x-" 또는 "ko-KR-" 로 시작하는 남성 음성 찾기
-        var maleVoice = voices.firstWhere(
-          (voice) => (voice['locale'].toString().toLowerCase().contains('ko') && 
-                     (voice['name'].toString().toLowerCase().contains('male') ||
-                      voice['name'].toString().toLowerCase().contains('wavenet-c') ||
-                      voice['name'].toString().toLowerCase().contains('wavenet-d'))),
-          orElse: () => voices.first
-        );
-        await _tts.setVoice({"name": maleVoice['name'], "locale": maleVoice['locale']});
-      }
-    } catch (e) {
-      print("INFO: Using default voice - $e");
-    }
+    // 자연스러운 남성 음성 설정
+    await _tts.setSpeechRate(0.5); // 적당한 속도
+    await _tts.setPitch(0.95); // 약간 낮은 톤 (자연스러움 유지)
+    await _tts.setVolume(1.0);
   }
 
   // Navigation
@@ -531,24 +512,36 @@ class _MainScreenState extends State<MainScreen> {
     setState(() => _isGenerating = true);
     await Future.delayed(const Duration(milliseconds: 500));
     
-    // 🎯 셀프 목표 기반 VDOT 계산
+    // 사용자 입력 파싱
+    double height = double.tryParse(_heightController.text) ?? 175;
+    double weight = double.tryParse(_weightController.text) ?? 70;
+    double weeklyMin = double.tryParse(_weeklyController.text) ?? 120;
+    double record10k = double.tryParse(_recordController.text) ?? 60;
+    
+    // 🎯 VDOT 계산 (셀프 목표 우선, 아니면 10km 기록 사용)
     double targetVDOT = 0;
-    try {
-      double goalDist = double.parse(_goalDistanceController.text);
-      double goalTime = double.parse(_goalTimeController.text);
-      targetVDOT = _calculateVDOT(goalDist, goalTime);
-      _trainingProgress['currentVDOT'] = targetVDOT;
-      _trainingProgress['lastCalculatedVDOT'] = targetVDOT;
-    } catch (e) {
-      // 기본값 사용
-      double record10k = double.tryParse(_recordController.text) ?? 60;
+    if (_useSelfGoal) {
+      try {
+        double goalDist = double.parse(_goalDistanceController.text);
+        double goalTime = double.parse(_goalTimeController.text);
+        targetVDOT = _calculateVDOT(goalDist, goalTime);
+      } catch (e) {
+        targetVDOT = _calculateVDOT(10, record10k);
+      }
+    } else {
       targetVDOT = _calculateVDOT(10, record10k);
-      _trainingProgress['currentVDOT'] = targetVDOT;
     }
     
-    // 📊 적응형 플랜 생성 (VDOT 기반)
-    List<Map<String, dynamic>> newPlan = [];
+    _trainingProgress['currentVDOT'] = targetVDOT;
+    _trainingProgress['lastCalculatedVDOT'] = targetVDOT;
+    
+    // 레벨별 설정 (실제로 차이 나게)
     int totalWeeks = _level == "beginner" ? 12 : (_level == "intermediate" ? 24 : 48);
+    double baseDistanceMultiplier = _level == "beginner" ? 0.7 : (_level == "intermediate" ? 1.0 : 1.3);
+    double weeklyVolumeKm = (weeklyMin / 60) * 10; // 주간 훈련량을 km로 환산 (시속 10km 가정)
+    
+    // 📊 적응형 플랜 생성
+    List<Map<String, dynamic>> newPlan = [];
     
     for(int i=1; i<=totalWeeks; i++) {
         // 주차별 강도 조절 (periodization)
@@ -566,8 +559,9 @@ class _MainScreenState extends State<MainScreen> {
           "intensity": intensity,
           "targetVDOT": targetVDOT,
           "completed": false,
-          "runs": _generateWeekRuns(i, totalWeeks, intensity, easyPace, tempoPace, intervalPace),
+          "runs": _generateWeekRuns(i, totalWeeks, intensity, baseDistanceMultiplier, weeklyVolumeKm, easyPace, tempoPace, intervalPace),
         });
+    }
     }
 
     setState(() {
@@ -619,36 +613,46 @@ class _MainScreenState extends State<MainScreen> {
     return basePace;
   }
   
-  // 주차별 훈련 생성
-  List<Map<String, dynamic>> _generateWeekRuns(int week, int totalWeeks, double intensity, double easyPace, double tempoPace, double intervalPace) {
+  // 주차별 훈련 생성 (개선: 사용자 입력 반영)
+  List<Map<String, dynamic>> _generateWeekRuns(int week, int totalWeeks, double intensity, 
+                                                  double levelMultiplier, double weeklyVolumeKm,
+                                                  double easyPace, double tempoPace, double intervalPace) {
     List<Map<String, dynamic>> runs = [];
     
-    // 기본 3일 훈련
+    // 진행도에 따른 거리 증가 (1주차 → 마지막 주차로 갈수록)
+    double progression = week / totalWeeks;
+    
+    // 기본 거리 (레벨과 주간 훈련량 반영)
+    double baseEasyDist = (2.0 + weeklyVolumeKm * 0.05) * levelMultiplier;
+    double baseTempoDist = (3.0 + weeklyVolumeKm * 0.07) * levelMultiplier;
+    double baseLSDDist = (4.0 + weeklyVolumeKm * 0.1) * levelMultiplier;
+    
+    // 🏃 화요일: 이지런
     runs.add({
       "day": "화",
       "type": "이지런",
-      "dist": 3.0 + (intensity * 2),
+      "dist": double.parse((baseEasyDist + (progression * baseEasyDist * 0.5)).toStringAsFixed(1)),
       "targetPace": easyPace,
       "desc": "편안한 페이스로 (${_formatPace(easyPace)})",
       "completed": false,
     });
     
     if (week % 4 == 0) {
-      // 회복 주
+      // 📉 회복 주 (4주마다)
       runs.add({
         "day": "목",
         "type": "회복런",
-        "dist": 3.0,
+        "dist": double.parse((baseEasyDist * 0.7).toStringAsFixed(1)),
         "targetPace": easyPace * 1.15,
         "desc": "아주 가볍게 (${_formatPace(easyPace * 1.15)})",
         "completed": false,
       });
     } else {
-      // 일반 주 - 인터벌 또는 템포
+      // 💪 일반 주 - 인터벌 또는 템포
       runs.add({
         "day": "목",
         "type": week % 2 == 0 ? "템포런" : "인터벌",
-        "dist": 4.0 + (intensity * 1),
+        "dist": double.parse((baseTempoDist + (intensity * baseTempoDist * 0.3)).toStringAsFixed(1)),
         "targetPace": week % 2 == 0 ? tempoPace : intervalPace,
         "desc": week % 2 == 0 
           ? "지속 가능한 빠른 페이스 (${_formatPace(tempoPace)})"
@@ -657,10 +661,11 @@ class _MainScreenState extends State<MainScreen> {
       });
     }
     
+    // 🏃‍♂️ 토요일: LSD (장거리) - 주차 진행에 따라 증가
     runs.add({
       "day": "토",
       "type": "LSD (장거리)",
-      "dist": 5.0 + (week * 0.3),
+      "dist": double.parse((baseLSDDist + (progression * baseLSDDist * 0.8)).toStringAsFixed(1)),
       "targetPace": easyPace * 1.1,
       "desc": "천천히 오래 달리기 (${_formatPace(easyPace * 1.1)})",
       "completed": false,
