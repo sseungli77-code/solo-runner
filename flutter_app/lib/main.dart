@@ -619,7 +619,23 @@ class _MainScreenState extends State<MainScreen> {
       print('🔄 Falling back to local algorithm');
     }
     
-    // ⚠️ 로컬 알고리즘 폴백
+    // ⚠️ 로컬 알고리즘 폴백 (오프라인/에러 시)
+    // 1. BMI 및 안전성 계수 계산
+    double heightM = (userData['height_cm'] ?? 175.0) / 100;
+    double weightKg = userData['weight_kg'] ?? 70.0;
+    double bmi = weightKg / (heightM * heightM);
+    
+    double volumeModifier = 1.0;
+    // ACSM 가이드라인: BMI 30 이상은 부상 위험으로 볼륨 50% 권장
+    if (bmi >= 30) {
+      volumeModifier = 0.5;
+    } else if (bmi >= 25) {
+      volumeModifier = 0.8;
+    }
+    
+    // 초보자는 기본적으로 약간 적게 시작
+    if (_level == "beginner") volumeModifier *= 0.9;
+    
     int totalWeeks = _level == "beginner" ? 12 : (_level == "intermediate" ? 24 : 48);
     
     for(int i=1; i<=totalWeeks; i++) {
@@ -636,7 +652,7 @@ class _MainScreenState extends State<MainScreen> {
         "intensity": intensity,
         "targetVDOT": targetVDOT,
         "completed": false,
-        "runs": _generateWeekRuns(i, totalWeeks, intensity, easyPace, tempoPace, intervalPace),
+        "runs": _generateWeekRuns(i, totalWeeks, intensity, easyPace, tempoPace, intervalPace, volumeModifier),
       });
     }
 
@@ -695,14 +711,15 @@ class _MainScreenState extends State<MainScreen> {
   }
   
   // 주차별 훈련 생성
-  List<Map<String, dynamic>> _generateWeekRuns(int week, int totalWeeks, double intensity, double easyPace, double tempoPace, double intervalPace) {
+  List<Map<String, dynamic>> _generateWeekRuns(int week, int totalWeeks, double intensity, double easyPace, double tempoPace, double intervalPace, double volumeModifier) {
     List<Map<String, dynamic>> runs = [];
     
     // 기본 3일 훈련
+    double dist1 = (3.0 + (intensity * 2)) * volumeModifier;
     runs.add({
       "day": "화",
       "type": "이지런",
-      "dist": 3.0 + (intensity * 2),
+      "dist": double.parse(dist1.toStringAsFixed(1)),
       "targetPace": easyPace,
       "desc": "편안한 페이스로 (${_formatPace(easyPace)})",
       "completed": false,
@@ -710,20 +727,22 @@ class _MainScreenState extends State<MainScreen> {
     
     if (week % 4 == 0) {
       // 회복 주
+      double recoveryDist = 3.0 * volumeModifier;
       runs.add({
         "day": "목",
         "type": "회복런",
-        "dist": 3.0,
+        "dist": double.parse(recoveryDist.toStringAsFixed(1)),
         "targetPace": easyPace * 1.15,
         "desc": "아주 가볍게 (${_formatPace(easyPace * 1.15)})",
         "completed": false,
       });
     } else {
       // 일반 주 - 인터벌 또는 템포
+      double qualityDist = (4.0 + (intensity * 1)) * volumeModifier;
       runs.add({
         "day": "목",
         "type": week % 2 == 0 ? "템포런" : "인터벌",
-        "dist": 4.0 + (intensity * 1),
+        "dist": double.parse(qualityDist.toStringAsFixed(1)),
         "targetPace": week % 2 == 0 ? tempoPace : intervalPace,
         "desc": week % 2 == 0 
           ? "지속 가능한 빠른 페이스 (${_formatPace(tempoPace)})"
@@ -732,10 +751,11 @@ class _MainScreenState extends State<MainScreen> {
       });
     }
     
+    double longDist = (5.0 + (week * 0.3)) * volumeModifier;
     runs.add({
       "day": "토",
       "type": "LSD (장거리)",
-      "dist": 5.0 + (week * 0.3),
+      "dist": double.parse(longDist.toStringAsFixed(1)),
       "targetPace": easyPace * 1.1,
       "desc": "천천히 오래 달리기 (${_formatPace(easyPace * 1.1)})",
       "completed": false,
