@@ -45,11 +45,15 @@ jobs:
 
     - name: Flet Build APK
       run: |
-        # Workaround: Flet build expects main.py or similar entry point standard
+        # Workaround: Copy to main.py standard name
         cp main_single.py main.py
         
-        # Build APK including the server module
-        flet build apk main.py --include-packages server --verbose
+        # Debug: List files to confirm main.py exists
+        ls -la
+        
+        # Build APK from current directory (where main.py is located)
+        # Pointing to '.' tells Flet to look for main.py here
+        flet build apk . --include-packages server --verbose
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
