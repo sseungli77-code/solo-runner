@@ -6,6 +6,8 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'dart:async';
 import 'dart:math';
 import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 // Gemini API Key (보안을 위해 실제 배포 시에는 숨겨야 함)
 const String _geminiKey = 'AIzaSyBtEtujomeYnJUc5ZlEi7CteLmapaEZ4MY';
