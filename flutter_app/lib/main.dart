@@ -168,34 +168,48 @@ class _MainScreenState extends State<MainScreen> {
           children: [
             const SizedBox(height: 20),
             // 메인 로고 - 네온 글로우 효과
-            Text("SOLO", 
-              style: TextStyle(
-                fontSize: 45, 
-                fontWeight: FontWeight.w900,
-                fontStyle: FontStyle.italic,
-                color: const Color(0xFF00FFF0),
-                letterSpacing: 3,
-                shadows: [
-                  Shadow(color: const Color(0xFF00FFF0).withOpacity(0.6), blurRadius: 20),
-                  Shadow(color: const Color(0xFF00FFF0).withOpacity(0.3), blurRadius: 40),
-                ],
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [Color(0xFF00FFF0), Color(0xFF00D9FF), Color(0xFF0099FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(bounds),
+              child: Text("SOLO", 
+                style: TextStyle(
+                  fontSize: 45, 
+                  fontWeight: FontWeight.w900,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.white,
+                  letterSpacing: 3,
+                  shadows: [
+                    Shadow(color: const Color(0xFF00FFF0).withOpacity(0.6), blurRadius: 20),
+                    Shadow(color: const Color(0xFF0099FF).withOpacity(0.4), blurRadius: 30),
+                  ],
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
-            Text("RUNNER", 
-              style: TextStyle(
-                fontSize: 45, 
-                fontWeight: FontWeight.w900,
-                fontStyle: FontStyle.italic,
-                color: const Color(0xFF00FFF0),
-                letterSpacing: 3,
-                height: 0.85,
-                shadows: [
-                  Shadow(color: const Color(0xFF00FFF0).withOpacity(0.6), blurRadius: 20),
-                  Shadow(color: const Color(0xFF00FFF0).withOpacity(0.3), blurRadius: 40),
-                ],
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [Color(0xFF00FFF0), Color(0xFF00D9FF), Color(0xFF0099FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(bounds),
+              child: Text("RUNNER", 
+                style: TextStyle(
+                  fontSize: 45, 
+                  fontWeight: FontWeight.w900,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.white,
+                  letterSpacing: 3,
+                  height: 0.85,
+                  shadows: [
+                    Shadow(color: const Color(0xFF00FFF0).withOpacity(0.6), blurRadius: 20),
+                    Shadow(color: const Color(0xFF0099FF).withOpacity(0.4), blurRadius: 30),
+                  ],
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             const Text("나만의 AI 달리기 코치", 
@@ -228,23 +242,59 @@ class _MainScreenState extends State<MainScreen> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _useSelfGoal 
-                    ? const Color(0xFF1A3A3A).withOpacity(0.6)
-                    : const Color(0xFF1A3A3A).withOpacity(0.4),
+                  gradient: _useSelfGoal
+                    ? LinearGradient(
+                        colors: [
+                          const Color(0xFF1A3A3A).withOpacity(0.6),
+                          const Color(0xFF1A2A3A).withOpacity(0.5),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                  color: !_useSelfGoal ? const Color(0xFF1A3A3A).withOpacity(0.4) : null,
                   borderRadius: BorderRadius.circular(15),
                   border: Border.all(
-                    color: _useSelfGoal 
-                      ? const Color(0xFF00FFF0).withOpacity(0.8)
-                      : const Color(0xFF00FFF0).withOpacity(0.5), 
-                    width: _useSelfGoal ? 2.5 : 2
+                    width: _useSelfGoal ? 2.5 : 2,
+                    color: Colors.transparent,
                   ),
                   boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00FFF0).withOpacity(_useSelfGoal ? 0.4 : 0.2),
-                      blurRadius: _useSelfGoal ? 20 : 15,
-                      spreadRadius: _useSelfGoal ? 2 : 1,
-                    ),
+                    if (_useSelfGoal) ..[
+                      BoxShadow(
+                        color: const Color(0xFF00FFF0).withOpacity(0.3),
+                        blurRadius: 20,
+                        spreadRadius: 1,
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFF0099FF).withOpacity(0.2),
+                        blurRadius: 15,
+                        spreadRadius: 2,
+                      ),
+                    ] else ..[
+                      BoxShadow(
+                        color: const Color(0xFF00FFF0).withOpacity(0.15),
+                        blurRadius: 15,
+                        spreadRadius: 1,
+                      ),
+                    ],
                   ],
+                ),
+                foregroundDecoration: _useSelfGoal ? BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    width: 2.5,
+                  ),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF00FFF0), Color(0xFF00D9FF), Color(0xFF0099FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ) : BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: const Color(0xFF00FFF0).withOpacity(0.5),
+                    width: 2,
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,18 +367,39 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
             const SizedBox(height: 25),
-          ElevatedButton(
-            onPressed: _isGenerating ? null : _generatePlan,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              backgroundColor: const Color(0xFF00FFF0),
-              foregroundColor: const Color(0xFF0F0F1E),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              elevation: 0,
-              shadowColor: const Color(0xFF00FFF0).withOpacity(0.5),
-            ).copyWith(
-              overlayColor: MaterialStateProperty.all(Colors.white.withOpacity(0.1)),
+          Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF00FFF0), Color(0xFF00D9FF), Color(0xFF0099FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF00FFF0).withOpacity(0.4),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+                BoxShadow(
+                  color: const Color(0xFF0099FF).withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
+            child: ElevatedButton(
+              onPressed: _isGenerating ? null : _generatePlan,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                backgroundColor: Colors.transparent,
+                foregroundColor: const Color(0xFF0F0F1E),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                elevation: 0,
+                shadowColor: Colors.transparent,
+              ).copyWith(
+                overlayColor: MaterialStateProperty.all(Colors.white.withOpacity(0.1)),
+              ),
             child: Text(
               _isGenerating ? "생성 중..." : "AI 목표치 설정 생성",
               style: const TextStyle(
