@@ -1480,4 +1480,13 @@ class _MainScreenState extends State<MainScreen> {
     int completed = runs.where((r) => r['completed'] == true).length;
     return "$completed/${runs.length}";
   }
+  
+  // Helper: 영어 요일 → 한글
+  String _translateDay(String day) {
+    const days = {
+      'Mon': '월', 'Tue': '화', 'Wed': '수', 'Thu': '목',
+      'Fri': '금', 'Sat': '토', 'Sun': '일'
+    };
+    return days[day] ?? day;
+  }
 }
