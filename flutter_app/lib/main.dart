@@ -98,8 +98,30 @@ class _MainScreenState extends State<MainScreen> {
   void _initTTS() async {
     _tts = FlutterTts();
     await _tts.setLanguage("ko-KR");
-    await _tts.setSpeechRate(0.5); // 천천히 또박또박
-    await _tts.setPitch(1.0);
+    
+    // 고급 남자 목소리 설정
+    await _tts.setSpeechRate(0.45); // 약간 느리고 차분하게
+    await _tts.setPitch(0.8); // 낮은 톤 (남성적)
+    await _tts.setVolume(1.0); // 최대 볼륨
+    
+    // 안드로이드: Google TTS 남성 음성 시도
+    try {
+      // 사용 가능한 음성 목록에서 한국어 남성 음성 선택
+      var voices = await _tts.getVoices;
+      if (voices != null) {
+        // "ko-kr-x-" 또는 "ko-KR-" 로 시작하는 남성 음성 찾기
+        var maleVoice = voices.firstWhere(
+          (voice) => (voice['locale'].toString().toLowerCase().contains('ko') && 
+                     (voice['name'].toString().toLowerCase().contains('male') ||
+                      voice['name'].toString().toLowerCase().contains('wavenet-c') ||
+                      voice['name'].toString().toLowerCase().contains('wavenet-d'))),
+          orElse: () => voices.first
+        );
+        await _tts.setVoice({"name": maleVoice['name'], "locale": maleVoice['locale']});
+      }
+    } catch (e) {
+      print("INFO: Using default voice - $e");
+    }
   }
 
   // Navigation
