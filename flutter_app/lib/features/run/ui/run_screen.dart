@@ -1,6 +1,8 @@
 
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import '../logic/gps_service.dart';
 
 class RunScreen extends StatefulWidget {
@@ -23,6 +25,8 @@ class _RunScreenState extends State<RunScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeMap();
+    
     // GPS callback 설정
     _gpsService.onDistanceUpdate = (distInc, currentPace) {
        if (mounted && _isRunning) {
@@ -40,6 +44,11 @@ class _RunScreenState extends State<RunScreen> {
        }
     };
   }
+
+  Future<void> _initializeMap() async {
+    // 네이버 맵 SDK 초기화
+    await NaverMapSdk.instance.initialize(); 
+  }
   
   void _toggleRun() async {
     if (_isRunning) {
@@ -47,8 +56,7 @@ class _RunScreenState extends State<RunScreen> {
         _timer?.cancel();
         _gpsService.stopTracking();
         setState(() => _isRunning = false);
-        // 여기서 바로 저장할 수도 있고, 따로 'Finish' 버튼을 만들 수도 있음.
-        // 현재 로직상 Pause 시 저장하는 걸로 유지.
+        
         widget.onSaveRun({
             'dist': _distKm,
             'time': _seconds,
@@ -58,7 +66,15 @@ class _RunScreenState extends State<RunScreen> {
     } else {
         // START
         bool granted = await _gpsService.checkPermission();
-        if (!granted) return; // 권한 거부 시
+        if (!granted) return; 
+
+        // 알림 권한 요청 (Android 13+)
+        if (await Permission.notification.isDenied) {
+             await Permission.notification.request();
+        }
+
+        // 타이머 중복 실행 방지
+        _timer?.cancel();
 
         setState(() { _isRunning = true; _seconds = 0; _distKm = 0.0; _pace = "-'--\""; });
         
@@ -85,15 +101,20 @@ class _RunScreenState extends State<RunScreen> {
     
     return Stack(
       children: [
-        // Map Placeholder 
-        Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0F0F1E),
-            image: DecorationImage(image: NetworkImage("https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.png"), opacity: 0.1, fit: BoxFit.cover)
+        // Real Naver Map Widget (지도가 비로소 나옵니다)
+        Positioned.fill(
+          child: NaverMap(
+            options: const NaverMapViewOptions(
+              indoorEnable: true,
+              locationButtonEnable: true,
+              consumeSymbolTapEvents: false,
+              mapType: NMapType.navi,
+              nightModeEnable: true,
+            ),
           ),
-          child: const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.map, size: 40, color: Colors.white12), SizedBox(height: 10), Text("Map View Disabled", style: TextStyle(color: Colors.white24))])),
         ),
         
+        // Gradient Overlay (가독성용)
         Positioned.fill(child: Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.black.withOpacity(0.7), Colors.transparent, Colors.black.withOpacity(0.8)], begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: const [0.0, 0.4, 0.8])))),
         
         // Top Info
