@@ -10,7 +10,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_naver_map/flutter_naver_map.dart';
+// import 'package:flutter_naver_map/flutter_naver_map.dart'; // Disable Map
 import 'package:permission_handler/permission_handler.dart';
 
 // [API Key & URL]
@@ -20,11 +20,8 @@ const String _serverUrl = 'https://solo-runner-api.onrender.com';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 네이버 맵 초기화
-  await NaverMapSdk.instance.initialize(
-    clientId: '35sazlmvtf',
-    onAuthFailed: (ex) => print("********* 네이버 맵 인증 실패: $ex *********"),
-  );
+  // 네이버 맵 초기화 제거
+  // await NaverMapSdk.instance.initialize(...);
   
   await Supabase.initialize(
     url: 'https://cigtumbiljofgwnjeegu.supabase.co',
@@ -85,14 +82,12 @@ class _MainScreenState extends State<MainScreen> {
     'weeklyCompletionRate': 0.0,
   };
 
-  // AI & Voice
   late GenerativeModel _geminiModel;
   final FlutterTts _tts = FlutterTts();
   bool _isVoiceOn = true;
   
   // Running State
   bool _isRunning = false;
-  String _gpsStatus = "GPS 대기 중...";
   double _distKm = 0.0;
   String _pace = "-'--\"";
   Timer? _timer;
@@ -119,7 +114,6 @@ class _MainScreenState extends State<MainScreen> {
     await _tts.setSpeechRate(0.5);
   }
   
-  // --- Data Persistence ---
   Future<void> _saveData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('level', _level);
@@ -173,7 +167,7 @@ class _MainScreenState extends State<MainScreen> {
         onPageChanged: (index) => setState(() => _selectedIndex = index),
         children: [
           _buildSetupPage(),
-          _buildRunPage(), // Naver Map UI
+          _buildRunPage(), // Map Disabled
           _buildPlanPage(),
         ],
       ),
@@ -195,7 +189,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // --- 1. Setup Page ---
+  // --- Setup Page ---
   Widget _buildSetupPage() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -250,11 +244,8 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // --- Plan Logic ---
   Future<void> _generatePlan() async {
     setState(() => _isGenerating = true);
-    
-    // Server First logic
     try {
       final userData = {
         'level': _level,
@@ -281,10 +272,8 @@ class _MainScreenState extends State<MainScreen> {
         return;
       }
     } catch (e) {
-      print("Server Error, falling back to local: $e");
+      print("Server Error: $e");
     }
-
-    // Local Fallback Logic (Updated with BMI Adjustment)
     _generatePlanLocal();
   }
   
@@ -294,40 +283,25 @@ class _MainScreenState extends State<MainScreen> {
     
     double h = double.tryParse(_heightController.text) ?? 175;
     double w = double.tryParse(_weightController.text) ?? 70;
-    double userHeightM = h / 100.0;
-    double bmi = w / (userHeightM * userHeightM);
+    double bmi = w / ((h/100)*(h/100));
     
-    // BMI Adjustment (Local)
     double adjustedVDOT = targetVDOT;
     double volMod = 1.0;
-    
-    if (bmi >= 30) {
-      adjustedVDOT -= 3.0; // Slower
-      volMod = 0.5; // Less volume
-    } else if (bmi >= 25) {
-      adjustedVDOT -= 1.0; // Slightly slower
-      volMod = 0.7;
-    }
+    if (bmi >= 30) { adjustedVDOT -= 3.0; volMod = 0.5; }
+    else if (bmi >= 25) { adjustedVDOT -= 1.0; volMod = 0.7; }
 
     List<Map<String, dynamic>> newPlan = [];
     int totalWeeks = _level == 'beginner' ? 12 : 24;
     
     for (int i = 1; i <= totalWeeks; i++) {
-        double easyPace = _getPaceFromVDOT(adjustedVDOT, 'easy');
         List<Map<String, dynamic>> runs = [
            {'day': 'Mon', 'type': 'Rest', 'dist': 0, 'desc': 'Rest Day', 'completed': false},
            {'day': 'Tue', 'type': 'Easy', 'dist': 3.0 * volMod, 'desc': 'Easy Run', 'completed': false},
            {'day': 'Thu', 'type': 'Easy', 'dist': 3.0 * volMod, 'desc': 'Easy Run', 'completed': false},
            {'day': 'Sat', 'type': 'Long', 'dist': 5.0 * volMod, 'desc': 'LSD Run', 'completed': false},
         ];
-        
-        newPlan.add({
-          'week': i,
-          'focus': 'Foundation',
-          'runs': runs,
-        });
+        newPlan.add({'week': i, 'focus': 'Foundation', 'runs': runs});
     }
-    
     setState(() {
       _plan = newPlan;
       _isGenerating = false;
@@ -341,36 +315,27 @@ class _MainScreenState extends State<MainScreen> {
     return 85.0 - (min10k * 0.8);
   }
   
-  double _getPaceFromVDOT(double vdot, String type) {
-    double basePace = (85.0 - vdot) / 0.8;
-    if (type == 'easy') return basePace * 1.2;
-    return basePace;
-  }
-
-  // --- 2. Run Page (Naver Map) ---
+  // --- Run Page (Without Map) ---
   Widget _buildRunPage() {
     String timeStr = "${(_seconds~/60).toString().padLeft(2,'0')}:${(_seconds%60).toString().padLeft(2,'0')}";
     
     return Stack(
       children: [
-        NaverMap(
-          options: const NaverMapViewOptions(
-            locationButtonEnable: true,
-            indoorEnable: true,
-            consumeSymbolTapEvents: false,
-            mapType: NMapType.basic,
-            nightModeEnable: true,
+        // Map Placeholder (Black Background)
+        Container(
+          color: Colors.black,
+          child: Center(
+            child: Icon(Icons.map_outlined, size: 100, color: Colors.white10),
           ),
-          onMapReady: (controller) {
-             print("Maps Ready");
-          },
         ),
         
+        // Gradient
         Positioned(
           top: 0, left: 0, right: 0, height: 150,
           child: Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.black.withOpacity(0.8), Colors.transparent], begin: Alignment.topCenter, end: Alignment.bottomCenter))),
         ),
         
+        // Timer
         Positioned(
           top: 60, left: 0, right: 0,
           child: Column(
@@ -381,6 +346,7 @@ class _MainScreenState extends State<MainScreen> {
           )
         ),
         
+        // Bottom Panel
         Positioned(
           bottom: 30, left: 20, right: 20,
           child: Container(
@@ -428,7 +394,7 @@ class _MainScreenState extends State<MainScreen> {
         _timer?.cancel();
         _positionStream?.cancel();
         setState(() => _isRunning = false);
-        _uploadRunData();
+        _saveData();
     } else {
         setState(() {
             _isRunning = true; 
@@ -438,25 +404,19 @@ class _MainScreenState extends State<MainScreen> {
         _timer = Timer.periodic(Duration(seconds: 1), (t) {
             setState(() => _seconds++);
         });
-        
-        // Mock GPS
+        // Mocking movement
         _timer = Timer.periodic(Duration(seconds: 2), (t) {
              if(_isRunning) {
-               setState(() {
+                setState(() {
                    _distKm += 0.01;
                    _pace = "6'30\"";
-               });
+                });
              }
         });
     }
   }
-  
-  void _uploadRunData() {
-      _saveData();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Run Saved!")));
-  }
 
-  // --- 3. Plan Page ---
+  // --- Plan Page ---
   Widget _buildPlanPage() {
     if (_plan.isEmpty) return Center(child: Text("Please generate a plan first", style: TextStyle(color: Colors.white30)));
     
@@ -473,13 +433,7 @@ class _MainScreenState extends State<MainScreen> {
                 title: Text(r['type'], style: TextStyle(color: Colors.white)),
                 subtitle: Text(r['desc'], style: TextStyle(color: Colors.white70)),
                 trailing: Text("${r['dist']}km", style: TextStyle(color: Color(0xFF00FFF0))),
-                onTap: () {
-                     setState(() {
-                         _currentRun = r;
-                         _selectedIndex = 1;
-                     });
-                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Target set!")));
-                },
+                onTap: () { setState(() => _currentRun = r); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Set Target"))); },
             )).toList()
           ),
         );
