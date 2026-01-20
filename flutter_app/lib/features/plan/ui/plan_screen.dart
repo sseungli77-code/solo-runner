@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'widgets/achievement_chart.dart';
 
 class PlanScreen extends StatelessWidget {
   final List<Map<String, dynamic>> plan;
@@ -24,21 +25,25 @@ class PlanScreen extends StatelessWidget {
         if (idx == 0) return _buildPlanHeader();
         
         final week = plan[idx-1];
+        // 이번 주인지 판단 (일단 1주차를 이번 주로 가정하거나, 로직 추가 가능)
+        bool isCurrentWeek = idx == 1; 
+
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.03),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: isCurrentWeek ? const Color(0xFF00FFF0).withOpacity(0.3) : Colors.white.withOpacity(0.05)),
           ),
           child: Theme(
             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
+              initiallyExpanded: isCurrentWeek, // 1주차만 펼치기
               tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               iconColor: const Color(0xFF00FFF0),
               collapsedIconColor: Colors.white24,
-              title: Text("WEEK ${week['week']}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18, fontFamily: 'monospace')),
-              subtitle: Text(week['focus'] ?? "Foundation", style: const TextStyle(color: Color(0xFF00FFF0), fontSize: 12)),
+              title: Text("WEEK ${week['week']}", style: TextStyle(color: isCurrentWeek ? Colors.white : Colors.white70, fontWeight: FontWeight.w900, fontSize: 18, fontFamily: 'monospace')),
+              subtitle: Text(week['focus'] ?? "Foundation", style: TextStyle(color: isCurrentWeek ? const Color(0xFF00FFF0) : Colors.white24, fontSize: 12)),
               children: (week['runs'] as List).map<Widget>((r) => ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                   leading: Container(
@@ -66,22 +71,38 @@ class PlanScreen extends StatelessWidget {
   }
 
   Widget _buildPlanHeader() {
+    // 차트 데이터 계산 (임시: 1주차 목표 합계 vs 완료 기록 합계)
+    // 실제로는 progress['weeklyDist'] 같은 걸 써야 하지만, 여기선 가볍게 구현
+    double planned = 0.0;
+    if (plan.isNotEmpty) {
+       for(var r in plan[0]['runs']) planned += (r['dist'] as double);
+    }
+    double actual = 0.0; 
+    // 실제 기록은 progress['completedRuns']에서 날짜 비교해서 가져와야 함.
+    // 일단 UI 테스트를 위해 0.0 (또는 데모값)
+    if (progress['completedWeeklyDist'] != null) actual = progress['completedWeeklyDist'];
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 30),
+      padding: const EdgeInsets.only(bottom: 10), // 간격 줄임 (차트 때문)
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text("MY PLAN", style: TextStyle(color: Color(0xFF00FFF0), fontSize: 12, letterSpacing: 2, fontWeight: FontWeight.bold)),
           const SizedBox(height: 5),
           const Text("TRAINING\nSCHEDULE", style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900, height: 1.1)),
-          const SizedBox(height: 20),
+          
+          // Achievement Chart Added Here!
+          AchievementChart(plannedDist: planned, actualDist: actual),
+          
+          const SizedBox(height: 10),
           Row(
             children: [
                _buildMiniStat("VDOT", progress['currentVDOT']?.toStringAsFixed(1) ?? "N/A"),
                const SizedBox(width: 20),
                _buildMiniStat("MISSED", "${progress['missedDays']} Days"),
             ],
-          )
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
