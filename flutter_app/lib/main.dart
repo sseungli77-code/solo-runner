@@ -1643,10 +1643,10 @@ class _MainScreenState extends State<MainScreen> {
            trailing: Text("${r['dist']} km", style: const TextStyle(color: Colors.tealAccent)),
            onTap: () {
              // 목표 설정
-             setState(() {
-                 _currentRun = r;
-                 _selectedIndex = 1; // Go to Run tab
-             });
+             // setState(() {
+             //     _currentRun = r;
+             //     _selectedIndex = 1; // Go to Run tab
+             // });
              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("오늘의 목표: ${r['type']} 설정됨!")));
            },
         )).toList(),
