@@ -97,25 +97,26 @@ def generate_plan_core(level_key, pace_10km, user_weekly_min, height_cm, weight_
 
     # --- B. Scientific Adaptation (ACSM Guidelines) ---
     method_mod = "Continuous"
-    intensity_mod = 1.0
     message = "Standard Training"
     risk_level = "SAFE"
     
+    # Pace Adjustment based on BMI (Direct Pace Impact)
+    pace_base = pace_10km
+    
     if bmi >= 25:
         method_mod = "Run/Walk"
-        intensity_mod = 1.05 
+        pace_base *= 1.05 # 5% slower
         risk_level = "CAUTION"
         message = "ACSM Guideline: Run/Walk Method applied."
         
     if bmi >= 30:
         method_mod = "Walk/Jog"
-        intensity_mod = 1.15
+        pace_base *= 1.15 # 15% slower
         vol_scale *= 0.8 
         risk_level = "HIGH"
         message = "ACSM Guideline: Low Impact Volume adapted."
 
-    paces = get_vdot_paces(pace_10km * 10.0 if pace_10km < 10 else pace_10km)
-    for k in paces: paces[k] *= intensity_mod
+    paces = get_vdot_paces(pace_base * 10.0 if pace_base < 10 else pace_base)
 
     # --- C. Plan Generation ---
     plan_weeks = []

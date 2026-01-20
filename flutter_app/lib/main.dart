@@ -695,11 +695,14 @@ class _MainScreenState extends State<MainScreen> {
     double bmi = weightKg / (heightM * heightM);
     
     double volumeModifier = 1.0;
-    // ACSM 가이드라인: BMI 30 이상은 부상 위험으로 볼륨 50% 권장
+    // 1-1. VDOT 보정 (과체중 시 페이스 하향 조정)
+    double adjustedVDOT = targetVDOT;
     if (bmi >= 30) {
-      volumeModifier = 0.5;
+      adjustedVDOT -= 3.0; 
+      volumeModifier = 0.5; // 기존 로직 유지
     } else if (bmi >= 25) {
-      volumeModifier = 0.7; // 서버 로직과 통일 (기존 0.8 -> 0.7)
+      adjustedVDOT -= 1.0;
+      volumeModifier = 0.7;
     }
     
     // 초보자는 기본적으로 약간 적게 시작
@@ -712,15 +715,16 @@ class _MainScreenState extends State<MainScreen> {
       double intensity = _calculateWeekIntensity(i, totalWeeks);
       String focus = _getWeekFocus(i, totalWeeks);
       
-      double easyPace = _getPaceFromVDOT(targetVDOT, 'easy');
-      double tempoPace = _getPaceFromVDOT(targetVDOT, 'tempo');
-      double intervalPace = _getPaceFromVDOT(targetVDOT, 'interval');
+      // 보정된 VDOT 사용
+      double easyPace = _getPaceFromVDOT(adjustedVDOT, 'easy');
+      double tempoPace = _getPaceFromVDOT(adjustedVDOT, 'tempo');
+      double intervalPace = _getPaceFromVDOT(adjustedVDOT, 'interval');
       
       newPlan.add({
         "week": i,
         "focus": focus,
         "intensity": intensity,
-        "targetVDOT": targetVDOT,
+        "targetVDOT": adjustedVDOT,
         "completed": false,
         "runs": _generateWeekRuns(i, totalWeeks, intensity, easyPace, tempoPace, intervalPace, volumeModifier, weeklyMinutes),
       });
