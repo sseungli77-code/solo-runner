@@ -8,6 +8,7 @@ import 'dart:math';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Gemini API Key (보안을 위해 실제 배포 시에는 숨겨야 함)
 const String _geminiKey = 'AIzaSyBtEtujomeYnJUc5ZlEi7CteLmapaEZ4MY';
@@ -91,6 +92,65 @@ class _MainScreenState extends State<MainScreen> {
     _pageController = PageController();
     _initTTS();
     _geminiModel = GenerativeModel(model: 'gemini-pro', apiKey: _geminiKey);
+    _loadData(); // 📂 저장된 데이터 로드
+  }
+
+  // 💾 데이터 저장
+  Future<void> _saveData() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // 1. 프로필 정보 저장
+    await prefs.setString('level', _level);
+    await prefs.setString('height', _heightController.text);
+    await prefs.setString('weight', _weightController.text);
+    await prefs.setString('weekly', _weeklyController.text);
+    await prefs.setString('record', _recordController.text);
+    await prefs.setBool('useSelfGoal', _useSelfGoal);
+    await prefs.setString('goalDist', _goalDistanceController.text);
+    await prefs.setString('goalTime', _goalTimeController.text);
+    
+    // 2. 플랜 데이터 저장 (JSON 변환)
+    if (_plan.isNotEmpty) {
+      String jsonPlan = jsonEncode(_plan);
+      await prefs.setString('training_plan', jsonPlan);
+    }
+    
+    // 3. 진행 상황 저장
+    await prefs.setString('training_progress', jsonEncode(_trainingProgress));
+    
+    print("✅ 데이터가 로컬에 저장되었습니다.");
+  }
+
+  // 📂 데이터 불러오기
+  Future<void> _loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    setState(() {
+      // 1. 프로필 로드
+      _level = prefs.getString('level') ?? 'beginner';
+      _heightController.text = prefs.getString('height') ?? '175';
+      _weightController.text = prefs.getString('weight') ?? '70';
+      _weeklyController.text = prefs.getString('weekly') ?? '120';
+      _recordController.text = prefs.getString('record') ?? '60';
+      _useSelfGoal = prefs.getBool('useSelfGoal') ?? false;
+      _goalDistanceController.text = prefs.getString('goalDist') ?? '5';
+      _goalTimeController.text = prefs.getString('goalTime') ?? '30';
+      
+      // 2. 플랜 로드
+      String? jsonPlan = prefs.getString('training_plan');
+      if (jsonPlan != null) {
+        List<dynamic> decoded = jsonDecode(jsonPlan);
+        _plan = decoded.cast<Map<String, dynamic>>();
+      }
+      
+      // 3. 진행 상황 로드
+      String? jsonProgress = prefs.getString('training_progress');
+      if (jsonProgress != null) {
+        _trainingProgress = jsonDecode(jsonProgress);
+      }
+    });
+    print("📂 데이터를 불러왔습니다.");
+  }
     
     // 앱 시작 시 누락된 훈련 확인
     Future.delayed(const Duration(seconds: 2), () {
@@ -606,6 +666,8 @@ class _MainScreenState extends State<MainScreen> {
           _selectedIndex = 2;
         });
         
+        _saveData(); // 💾 저장
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('🎯 서버 플랜 생성 완료! (VDOT: ${targetVDOT.toStringAsFixed(1)})'),
@@ -662,6 +724,8 @@ class _MainScreenState extends State<MainScreen> {
       _isGenerating = false;
       _selectedIndex = 2;
     });
+    
+    _saveData(); // 💾 저장
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1192,6 +1256,8 @@ class _MainScreenState extends State<MainScreen> {
             print("WARN: Plan adjustment failed - $e2");
           }
       }
+      
+      _saveData(); // 💾 데이터 영구 저장
       
       // 항상 성공 메시지 표시 (Supabase 동기화 실패해도 로컬 데이터는 유효)
       if (mounted) {
