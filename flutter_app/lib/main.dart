@@ -1677,25 +1677,7 @@ class _MainScreenState extends State<MainScreen> {
   }
   
   // 📊 주간 완료율 계산
-  double _getWeeklyCompletionRate() {
-    if (_plan.isEmpty) return 0.0;
-    
-    var thisWeek = _plan.first;
-    List runs = thisWeek['runs'] ?? [];
-    if (runs.isEmpty) return 0.0;
-    
-    int completed = runs.where((r) => r['completed'] == true).length;
-    return completed / runs.length;
-  }
-  
-  String _getWeeklyCompletionText() {
-    if (_plan.isEmpty) return "0/0";
-    
-    var thisWeek = _plan.first;
-    List runs = thisWeek['runs'] ?? [];
-    int completed = runs.where((r) => r['completed'] == true).length;
-    return "$completed/${runs.length}";
-  }
+
   
   // Helper: 영어 요일 → 한글
   String _translateDay(String day) {
