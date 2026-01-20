@@ -69,6 +69,9 @@ class _RunScreenState extends State<RunScreen> {
         bool granted = await _gpsService.checkPermission();
         if (!granted) return; // 권한 거부 시
 
+        // 타이머 중복 실행 방지
+        _timer?.cancel();
+
         setState(() { _isRunning = true; _seconds = 0; _distKm = 0.0; _pace = "-'--\""; });
         
         // 타이머 시작 (1초마다 시간 증가)
