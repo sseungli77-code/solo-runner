@@ -7,7 +7,7 @@ class GpsService {
   Position? _lastPosition;
   
   // 콜백 함수: 거리가 업데이트될 때마다 호출됨 (거리증가량, 현재페이스)
-  final Function(double, double)? onDistanceUpdate; 
+  Function(double, double)? onDistanceUpdate; 
 
   GpsService({this.onDistanceUpdate});
 
