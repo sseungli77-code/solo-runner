@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import '../logic/gps_service.dart';
 
 class RunScreen extends StatefulWidget {
@@ -24,6 +25,7 @@ class _RunScreenState extends State<RunScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeMap();
     // GPS callback 설정
     _gpsService.onDistanceUpdate = (distInc, currentPace) {
        if (mounted && _isRunning) {
@@ -40,6 +42,11 @@ class _RunScreenState extends State<RunScreen> {
          });
        }
     };
+  }
+  
+  Future<void> _initializeMap() async {
+    // 네이버 맵 SDK 초기화
+    await NaverMapSdk.instance.initialize(); 
   }
   
   void _toggleRun() async {
@@ -93,15 +100,23 @@ class _RunScreenState extends State<RunScreen> {
     
     return Stack(
       children: [
-        // Map Placeholder (No Naver Map)
-        Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0F0F1E),
-            image: DecorationImage(image: NetworkImage("https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.png"), opacity: 0.1, fit: BoxFit.cover)
+        // Real Naver Map
+        Positioned.fill(
+          child: NaverMap(
+            options: const NaverMapViewOptions(
+              indoorEnable: true,
+              locationButtonEnable: true, // 현위치 버튼
+              consumeSymbolTapEvents: false,
+              mapType: NMapType.navi, // 네비게이션 스타일 (어두움)
+              nightModeEnable: true, // 강제 다크 모드
+            ),
+            onMapReady: (controller) {
+              print("Naver Map Ready");
+            },
           ),
-          child: const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.map, size: 40, color: Colors.white12), SizedBox(height: 10), Text("GPS Tracking Active\n(Map View Disabled)", textAlign: TextAlign.center, style: TextStyle(color: Colors.white24))])),
         ),
         
+        // Gradient Overlay
         Positioned.fill(child: Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.black.withOpacity(0.7), Colors.transparent, Colors.black.withOpacity(0.8)], begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: const [0.0, 0.4, 0.8])))),
         
         // Top Info
