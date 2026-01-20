@@ -37,6 +37,9 @@ jobs:
     - name: Accept Android Licenses
       run: yes | flutter doctor --android-licenses || true
 
+    - name: Clean Gradle Cache (Force Reset)
+      run: rm -rf ~/.gradle/caches
+
     - name: Get Flutter Dependencies
       run: flutter pub get
 
