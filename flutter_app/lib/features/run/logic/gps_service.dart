@@ -25,16 +25,15 @@ class GpsService {
   void startTracking() async {
     if (!await checkPermission()) return;
 
-    // 1. 설정값 변경: 제한 해제 (Navigation Grade)
+    // 1. 설정값 튜닝: 정확도는 높이되, 너무 민감하지 않게 (DistanceFilter 3m)
     LocationSettings locationSettings;
     
     if (defaultTargetPlatform == TargetPlatform.android) {
       locationSettings = AndroidSettings(
         accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 0, // 0m: 즉시 갱신
-        forceLocationManager: true, // 구형 기기 강제 갱신
-        intervalDuration: const Duration(seconds: 1), // 1초마다 강제 갱신
-        // 2. 백그라운드 사수 (포그라운드 서비스 알림)
+        distanceFilter: 3, // 0은 너무 튀므로 3m로 조정 (안정성 확보)
+        forceLocationManager: true,
+        intervalDuration: const Duration(seconds: 1), 
         foregroundNotificationConfig: const ForegroundNotificationConfig(
           notificationTitle: "Solo Runner",
           notificationText: "Tracking your run...",
@@ -44,15 +43,15 @@ class GpsService {
     } else if (defaultTargetPlatform == TargetPlatform.iOS) {
       locationSettings = AppleSettings(
         accuracy: LocationAccuracy.bestForNavigation,
-        activityType: ActivityType.fitness, // iOS에 '운동 중' 신분 밝힘
-        distanceFilter: 0,
+        activityType: ActivityType.fitness,
+        distanceFilter: 3, // iOS 동일 적용
         pauseLocationUpdatesAutomatically: false,
         showBackgroundLocationIndicator: true,
       );
     } else {
       locationSettings = const LocationSettings(
         accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 0,
+        distanceFilter: 3,
       );
     }
 
@@ -61,8 +60,9 @@ class GpsService {
     _positionStream = Geolocator.getPositionStream(locationSettings: locationSettings)
         .listen((Position position) {
       
-      // 3. 데이터 거르기 (정확도 필터: 오차 30m 이상은 버림)
-      if (position.accuracy > 30.0) return; 
+      // 2. 가만히 있을 때 튀는 값 잡기 (정확도 필터 강화)
+      // 오차가 20m 이상이면 신뢰할 수 없음 -> 버림
+      if (position.accuracy > 20.0) return; 
 
       if (_lastPosition != null) {
         double distMeters = Geolocator.distanceBetween(
@@ -70,23 +70,30 @@ class GpsService {
           position.latitude, position.longitude
         );
         
-        // 시간 차이 (초)
+        // 3. 미세 떨림 보정 (노이즈 캔슬링)
+        // 1m 미만 움직임은 GPS 오차(Drift)일 확률 99% -> 무시
+        if (distMeters < 1.0) return;
+
         int timeDelta = position.timestamp!.difference(_lastPosition!.timestamp!).inSeconds;
-        if (timeDelta <= 0) timeDelta = 1; // 0초 방지
+        if (timeDelta <= 0) timeDelta = 1;
 
-        // 속도 계산 (m/s)
-        double speed = distMeters / timeDelta;
+        double speed = distMeters / timeDelta; // m/s
 
-        // '우사인 볼트 필터': 12.5m/s (약 45km/h) 이상이면 튀는 값으로 간주
-        if (speed < 12.5) {
+        // 4. 속도 필터링
+        // 너무 느리면(0.5m/s 미만) 정지 상태로 간주
+        // 너무 빠르면(12.5m/s 이상, 45km/h) 튄 값으로 간주
+        if (speed < 0.5) {
+           // 정지 상태
+        } else if (speed < 12.5) {
+           // 유효한 이동
            double distKm = distMeters / 1000.0;
            if (onDistanceUpdate != null) {
-              onDistanceUpdate!(distKm, 0.0); 
+              onDistanceUpdate!(distKm, speed); 
            }
-           _lastPosition = position; // 유효한 데이터일 때만 갱신
+           _lastPosition = position; // 유효할 때만 갱신
         }
       } else {
-        _lastPosition = position; // 첫 위치
+        _lastPosition = position;
       }
     });
   }

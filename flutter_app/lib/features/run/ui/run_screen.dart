@@ -58,16 +58,18 @@ class _RunScreenState extends State<RunScreen> {
     } else {
         // START
         bool granted = await _gpsService.checkPermission();
-        if (!granted) return; // 권한 거부 시
+        if (!granted) return; 
+
+        // 타이머 중복 실행 방지 (기존 타이머 제거)
+        _timer?.cancel(); 
 
         setState(() { _isRunning = true; _seconds = 0; _distKm = 0.0; _pace = "-'--\""; });
         
-        // 타이머 시작 (1초마다 시간 증가)
+        // 타이머 시작 (정확히 1초마다)
         _timer = Timer.periodic(const Duration(seconds: 1), (t) { 
            if (mounted) setState(() => _seconds++); 
         });
         
-        // GPS 추적 시작
         _gpsService.startTracking();
     }
   }
