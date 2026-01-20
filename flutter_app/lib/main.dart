@@ -201,7 +201,7 @@ class _MainScreenState extends State<MainScreen> {
         ),
         child: PageView(
           controller: _pageController,
-          physics: const NeverScrollableScrollPhysics(),
+          physics: const BouncingScrollPhysics(),
           onPageChanged: (index) => setState(() => _selectedIndex = index),
           children: [
             SetupScreen(
