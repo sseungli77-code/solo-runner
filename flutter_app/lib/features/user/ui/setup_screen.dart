@@ -66,15 +66,27 @@ class _SetupScreenState extends State<SetupScreen> {
           _buildNeonInput("Weekly Available Time (min)", _weeklyController),
           const SizedBox(height: 30),
           
-          // Fitness Level
-           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white24)),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _level, dropdownColor: const Color(0xFF1E1E2C), icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF00FFF0)),
-                items: ['beginner', 'intermediate', 'advanced'].map((l) => DropdownMenuItem(value: l, child: Text(l.toUpperCase(), style: const TextStyle(color: Colors.white, fontFamily: 'monospace')))).toList(),
-                onChanged: (v) => setState(() => _level = v!),
+          // Fitness Level (Exclusive with Self Goal)
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 300),
+            opacity: _useSelfGoal ? 0.3 : 1.0,
+            child: IgnorePointer(
+              ignoring: _useSelfGoal,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white24)),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _level, 
+                    dropdownColor: const Color(0xFF1E1E2C), 
+                    icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF00FFF0)),
+                    items: ['beginner', 'intermediate', 'advanced'].map((l) => DropdownMenuItem(value: l, child: Text(l.toUpperCase(), style: const TextStyle(color: Colors.white, fontFamily: 'monospace')))).toList(),
+                    onChanged: (v) => setState(() { 
+                        _level = v!; 
+                        _useSelfGoal = false; // 레벨 선택 시 커스텀 끄기 (혹시 모르니)
+                    }),
+                  ),
+                ),
               ),
             ),
           ),
