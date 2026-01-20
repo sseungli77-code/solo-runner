@@ -50,7 +50,7 @@ android {
 
     defaultConfig {
         applicationId "com.solorunner.flutter"
-        minSdk 23
+        minSdk 21
         targetSdk 34
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
