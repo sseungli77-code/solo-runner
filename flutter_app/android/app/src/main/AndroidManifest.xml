@@ -4,9 +4,13 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
+    
+    <!-- 백그라운드 생존 필수 권한 -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- 상단바 알림 필수 권한 (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
         android:label="Solo Runner"
@@ -35,8 +39,8 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-            
-        <!-- 안드로이드 14 백그라운드 GPS 필수 서비스 선언 -->
+
+        <!-- 안드로이드 14 백그라운드 서비스 명시 -->
         <service
             android:name="com.baseflow.geolocator.GeolocatorService"
             android:foregroundServiceType="location"
