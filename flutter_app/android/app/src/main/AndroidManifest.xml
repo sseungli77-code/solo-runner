@@ -35,5 +35,11 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+            
+        <!-- 안드로이드 14 백그라운드 GPS 필수 서비스 선언 -->
+        <service
+            android:name="com.baseflow.geolocator.GeolocatorService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
     </application>
 </manifest>
