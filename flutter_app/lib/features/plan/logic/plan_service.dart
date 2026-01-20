@@ -42,6 +42,24 @@ class PlanService {
     if (level == 'intermediate') { baseEasyDist = 5.0; baseLongDist = 10.0; }
     if (level == 'advanced') { baseEasyDist = 8.0; baseLongDist = 15.0; }
 
+    // 3. Time Constraint Logic (시간 제한 적용)
+    // VDOT 기반 예상 Easy Pace (분/km) 추정
+    double estimatedPace = _estimateEasyPace(vdot); 
+    
+    // 예상 주간 총 거리 (대략적) = (화:Easy + 목:Tempo + 토:Long) * 주차 진행률 평균(1.2)
+    double estWeeklyDist = (baseEasyDist + baseEasyDist + baseLongDist) * volumeMod * 1.2;
+    double estTotalMinutes = estWeeklyDist * estimatedPace;
+
+    // 시간이 부족하면 거리를 줄임 (비율 적용)
+    if (estTotalMinutes > weeklyMinutes) {
+       double timeRatio = weeklyMinutes / estTotalMinutes;
+       // 너무 줄어들지 않게 최소 50%는 유지, 최대 100%
+       timeRatio = max(0.5, timeRatio);
+       
+       volumeMod *= timeRatio; 
+       intensityLabel += " (Time Limited)";
+    }
+
     for (int week = 1; week <= totalWeeks; week++) {
       // 주차별 점진적 과부하 (10%씩 증가)
       double progression = 1.0 + (week * 0.05); 
@@ -103,5 +121,13 @@ class PlanService {
   double _calculateVDOT(double min10k) {
     if (min10k <= 0) return 30.0;
     return 85.0 - (min10k * 0.8);
+  }
+
+  // VDOT를 대략적인 Easy Pace (min/km)로 변환
+  double _estimateEasyPace(double vdot) {
+      // VDOT 30 ~= 7.5 min/km, VDOT 60 ~= 4.6 min/km
+      // 선형 근사: Pace = 10.5 - (0.1 * VDOT) (대략적)
+      double pace = 10.5 - (0.1 * vdot);
+      return max(4.0, pace); // 아무리 빨라도 4분/km 이하로 잡히진 않게 (Safety)
   }
 }
