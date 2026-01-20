@@ -9,10 +9,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 // Screens
-import 'screens/setup_screen.dart';
-import 'screens/run_screen.dart';
-import 'screens/plan_screen.dart';
-import 'services/plan_service.dart';
+import 'features/user/ui/setup_screen.dart';
+import 'features/run/ui/run_screen.dart';
+import 'features/plan/ui/plan_screen.dart';
+import 'features/plan/logic/plan_service.dart';
 
 const String _serverUrl = 'https://solo-runner-api.onrender.com';
 
