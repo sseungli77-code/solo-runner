@@ -1575,7 +1575,7 @@ class _MainScreenState extends State<MainScreen> {
           const SizedBox(height: 15),
           
           // 1주차는 기본적으로 펼쳐서 보여줌
-          _buildWeekCard(thisWeek, initiallyExpanded: true),
+          _buildWeekCard(context, thisWeek, initiallyExpanded: true),
           
           const SizedBox(height: 20),
           
@@ -1628,7 +1628,7 @@ class _MainScreenState extends State<MainScreen> {
                   "이후 훈련 일정 (${futureWeeks.length}주)", 
                   style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)
                 ),
-                children: futureWeeks.map((w) => _buildWeekCard(w)).toList(),
+                children: futureWeeks.map((w) => _buildWeekCard(context, w)).toList(),
               ),
             ),
             
@@ -1639,7 +1639,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildWeekCard(Map<String, dynamic> week, {bool initiallyExpanded = false}) {
+  Widget _buildWeekCard(BuildContext context, Map<String, dynamic> week, {bool initiallyExpanded = false}) {
     return Card(
       color: Colors.white10,
       margin: const EdgeInsets.only(bottom: 10),
