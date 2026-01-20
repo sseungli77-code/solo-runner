@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 
 // Gemini API Key (보안을 위해 실제 배포 시에는 숨겨야 함)
 const String _geminiKey = 'AIzaSyBtEtujomeYnJUc5ZlEi7CteLmapaEZ4MY';
@@ -16,6 +17,12 @@ const String _serverUrl = 'https://solo-runner-api.onrender.com';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 네이버 맵 초기화
+  await NaverMapSdk.instance.initialize(
+    clientId: '35sazlmvtf',
+    onAuthFailed: (ex) => print("********* 네이버 맵 인증 실패: $ex *********"),
+  );
   
   // Supabase 초기화
   await Supabase.initialize(
@@ -864,167 +871,138 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildRunPage() {
     String timeStr = "${(_seconds~/60).toString().padLeft(2,'0')}:${(_seconds%60).toString().padLeft(2,'0')}";
     
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF1A2A3A), Color(0xFF0F0F1E)],
+    return Stack(
+      children: [
+        // 1. 네이버 지도 (배경)
+        NaverMap(
+          options: const NaverMapViewOptions(
+            locationButtonEnable: true, // 현위치 버튼
+            indoorEnable: true,
+            consumeSymbolTapEvents: false,
+            mapType: NMapType.basic,
+            nightModeEnable: true, // 다크 모드
+          ),
+          onMapReady: (controller) {
+             print("🗺️ 네이버 지도 준비 완료");
+          },
         ),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-             // 상태 텍스트 - 네온 스타일
-             Text(
-               _isRunning ? "RUNNING" : "READY", 
-               style: TextStyle(
-                 fontSize: 28, 
-                 fontWeight: FontWeight.w900,
-                 color: const Color(0xFF00FFF0),
-                 letterSpacing: 4,
-                 shadows: [
-                   Shadow(color: const Color(0xFF00FFF0).withOpacity(0.6), blurRadius: 15),
-                   Shadow(color: const Color(0xFF00FFF0).withOpacity(0.3), blurRadius: 30),
-                 ],
-               )
-             ),
-             const SizedBox(height: 40),
-             
-             // 네온 원형 타이머
-             Container(
-               width: 240,
-               height: 240,
-               decoration: BoxDecoration(
-                 shape: BoxShape.circle,
-                 border: Border.all(
-                   color: _isRunning ? const Color(0xFF00FFF0) : const Color(0xFF00FFF0).withOpacity(0.3),
-                   width: 6,
-                 ),
-                 boxShadow: _isRunning ? [
-                   BoxShadow(
-                     color: const Color(0xFF00FFF0).withOpacity(0.5),
-                     blurRadius: 30,
-                     spreadRadius: 5,
-                   ),
-                   BoxShadow(
-                     color: const Color(0xFF00FFF0).withOpacity(0.3),
-                     blurRadius: 50,
-                     spreadRadius: 10,
-                   ),
-                 ] : [
-                   BoxShadow(
-                     color: const Color(0xFF00FFF0).withOpacity(0.2),
-                     blurRadius: 20,
-                     spreadRadius: 2,
-                   ),
-                 ],
-               ),
-               alignment: Alignment.center,
-               child: Text(
-                 timeStr,
-                 style: TextStyle(
-                   fontSize: 62,
-                   fontFamily: 'monospace',
-                   fontWeight: FontWeight.w900,
-                   color: Colors.white,
-                   shadows: [
-                     Shadow(color: const Color(0xFF00FFF0).withOpacity(0.3), blurRadius: 10),
-                   ],
-                 ),
-               ),
-             ),
-             
-             const SizedBox(height: 50),
-             
-             // 통계 정보 - 네온 스타일
-             Row(
-               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-               children: [
-                 _buildNeonStat("거리", "${_distKm.toStringAsFixed(2)}", "km"),
-                 _buildNeonStat("페이스", _pace, "/km"),
-               ],
-             ),
-             
-             const SizedBox(height: 15),
-             Text(
-               _gpsStatus,
-               style: const TextStyle(fontSize: 11, color: Colors.white30, letterSpacing: 0.5),
-             ),
-             
-             const SizedBox(height: 50),
-             
-             // 컨트롤 버튼 - 네온 원형 버튼
-             Row(
-               mainAxisAlignment: MainAxisAlignment.center,
-               children: [
-                 // 오디오 ON/OFF 버튼
-                 Container(
-                   width: 50,
-                   height: 50,
-                   decoration: BoxDecoration(
-                     shape: BoxShape.circle,
-                     border: Border.all(
-                       color: _isVoiceOn ? const Color(0xFF00FFF0).withOpacity(0.6) : Colors.white24,
-                       width: 2,
+        
+        // 2. 상단 그라데이션 (가독성용)
+        Positioned(
+          top: 0, left: 0, right: 0,
+          height: 200,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+        ),
+
+        // 3. 중앙 타이머 (상단 배치)
+        Positioned(
+            top: 80, left: 0, right: 0,
+            child: Column(
+              children: [
+                Text(
+                  _isRunning ? "RUNNING" : "READY",
+                  style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.bold, 
+                    color: Color(0xFF00FFF0), letterSpacing: 2
+                  )
+                ),
+                Text(
+                    timeStr,
+                    style: TextStyle(
+                        fontSize: 70, 
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.w900, 
+                        color: Colors.white,
+                        shadows: [Shadow(color: Colors.black.withOpacity(0.8), blurRadius: 20)]
+                    )
+                ),
+              ],
+            )
+        ),
+        
+        // 4. 하단 컨트롤 패널 (Glassmorphism)
+        Positioned(
+          bottom: 30, left: 20, right: 20,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F0F1E).withOpacity(0.85),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: Colors.white12, width: 1),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20, spreadRadius: 5)
+              ]
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 통계 (거리, 페이스)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNeonStat("거리", "${_distKm.toStringAsFixed(2)}", "km"),
+                    Container(width: 1, height: 40, color: Colors.white24),
+                    _buildNeonStat("페이스", _pace, "/km"),
+                  ],
+                ),
+                const SizedBox(height: 25),
+                
+                // 버튼
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                     // 소리 버튼
+                     IconButton(
+                        icon: Icon(_isVoiceOn ? Icons.volume_up : Icons.volume_off, color: Colors.white54),
+                        onPressed: () {
+                          setState(() => _isVoiceOn = !_isVoiceOn);
+                        }
                      ),
-                     color: _isVoiceOn 
-                       ? const Color(0xFF00FFF0).withOpacity(0.15)
-                       : Colors.white.withOpacity(0.05),
-                   ),
-                   child: IconButton(
-                     icon: Icon(_isVoiceOn ? Icons.volume_up : Icons.volume_off),
-                     color: _isVoiceOn ? const Color(0xFF00FFF0) : Colors.white38,
-                     iconSize: 24,
-                     padding: EdgeInsets.zero,
-                     onPressed: () {
-                       setState(() {
-                         _isVoiceOn = !_isVoiceOn;
-                       });
-                       _tts.speak(_isVoiceOn ? "오디오 코칭을 켭니다." : "오디오 코칭을 끕니다.");
-                     },
-                   ),
-                 ),
-                 const SizedBox(width: 30),
-                 
-                 // 재생/정지 버튼 - 네온 글로우
-                 GestureDetector(
-                   onTap: _toggleRun,
-                   child: Container(
-                     width: 90,
-                     height: 90,
-                     decoration: BoxDecoration(
-                       color: _isRunning 
-                         ? const Color(0xFFFF3366)
-                         : const Color(0xFF00FFF0),
-                       shape: BoxShape.circle,
-                       boxShadow: [
-                         BoxShadow(
-                           color: _isRunning 
-                             ? const Color(0xFFFF3366).withOpacity(0.5)
-                             : const Color(0xFF00FFF0).withOpacity(0.6),
-                           blurRadius: 25,
-                           spreadRadius: 3,
+                     const SizedBox(width: 20),
+                     
+                     // 메인 버튼 Start/Stop
+                     GestureDetector(
+                       onTap: _toggleRun,
+                       child: Container(
+                         width: 80, height: 80,
+                         decoration: BoxDecoration(
+                           shape: BoxShape.circle,
+                           color: _isRunning ? const Color(0xFFFF3366) : const Color(0xFF00FFF0),
+                           boxShadow: [
+                             BoxShadow(
+                               color: _isRunning ? const Color(0xFFFF3366).withOpacity(0.5) : const Color(0xFF00FFF0).withOpacity(0.5),
+                               blurRadius: 20, spreadRadius: 2
+                             )
+                           ]
                          ),
-                       ],
+                         child: Icon(
+                           _isRunning ? Icons.pause : Icons.play_arrow,
+                           color: const Color(0xFF0F0F1E), size: 40
+                         ),
+                       ),
                      ),
-                     child: Icon(
-                       _isRunning ? Icons.pause : Icons.play_arrow,
-                       size: 45,
-                       color: const Color(0xFF0F0F1E),
+                     
+                     const SizedBox(width: 20),
+                     // 대칭용 더미 (또는 설정 버튼)
+                     IconButton(
+                        icon: const Icon(Icons.settings, color: Colors.transparent), // 안 보이게
+                        onPressed: null,
                      ),
-                   ),
-                 ),
-                 
-                 const SizedBox(width: 30),
-                 // 대칭을 위한 빈 공간
-                 const SizedBox(width: 50, height: 50),
-               ],
-             )
-          ],
+                  ],
+                )
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
   

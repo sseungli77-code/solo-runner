@@ -9,6 +9,9 @@
         android:label="Solo Runner"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <meta-data
+            android:name="com.naver.maps.map.CLIENT_ID"
+            android:value="35sazlmvtf" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

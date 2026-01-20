@@ -19,6 +19,7 @@ dependencies:
   fl_chart: ^0.65.0 # For charts
   url_launcher: ^6.2.4 # For opening links
   permission_handler: ^11.3.0 # For permissions
+  flutter_naver_map: ^1.4.0 # For Naver Map
 
 dev_dependencies:
   flutter_test:
