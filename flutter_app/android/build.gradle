@@ -14,11 +14,11 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // [Fix] 올바른 네이버 지도 라이브러리 저장소 주소 사용
+        // [Fix] 올바른 네이버 지도 라이브러리 저장소 주소
         maven { url 'https://repository.map.naver.com/archive/maven' }
     }
 
-    // [유지] bcprov 1.78 강제 고정
+    // [전역 설정] bcprov 1.78 강제
     configurations.all {
         resolutionStrategy {
             force 'org.bouncycastle:bcprov-jdk18on:1.78'
@@ -30,6 +30,13 @@ rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(':app')
+
+    // [추가] 서브프로젝트(플러그인)에도 직접 강제 설정 주입
+    project.configurations.all {
+        resolutionStrategy {
+            force 'org.bouncycastle:bcprov-jdk18on:1.78'
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
