@@ -68,10 +68,11 @@ flutter {
 }
 
 dependencies {
-    // [사용자 요청] 네이버 지도 SDK에서 bcprov 1.79 차단(Exclude)
-    implementation ("com.naver.maps:map-sdk:3.17.0") {
+    // [Fix] 3.17.0 is deprecated/missing -> Using 3.19.1 stable
+    // Also excluding bcprov to prevent collisions
+    implementation ("com.naver.maps:map-sdk:3.19.1") {
         exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
     }
-    // 대신 안전한 1.78 버전을 직접 주입 (Inject)
+    // Inject safe bcprov version
     implementation 'org.bouncycastle:bcprov-jdk18on:1.78'
 }
