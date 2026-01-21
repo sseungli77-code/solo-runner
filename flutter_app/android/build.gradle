@@ -4,9 +4,8 @@ buildscript {
         google()
         mavenCentral()
     }
-
     dependencies {
-        classpath "com.android.tools.build:gradle:8.2.1"
+        classpath 'com.android.tools.build:gradle:8.2.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -15,14 +14,22 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        // [전략 B의 핵심] 저장소 물량 공세 - 하나만 걸려라!
+        maven { url 'https://repository.map.naver.com/archive/maven' }
+        maven { url 'https://naver.jfrog.io/artifactory/maven/' }
+    }
+
+    // 기본 방어: bcprov 1.78 강제
+    configurations.all {
+        resolutionStrategy {
+            force 'org.bouncycastle:bcprov-jdk18on:1.78'
+        }
     }
 }
 
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
     project.evaluationDependsOn(':app')
 }
 
