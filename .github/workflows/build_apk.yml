@@ -40,12 +40,17 @@ jobs:
     - name: Get Flutter Dependencies
       run: flutter pub get
 
+    # 8. 클린 빌드 및 APK 생성
     - name: Build APK
-      run: flutter build apk --release
+      env:
+        GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+      run: |
+        flutter clean
+        flutter pub get
+        flutter build apk --release
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: solo-runner-native
         path: flutter_app/build/app/outputs/flutter-apk/app-release.apk
-

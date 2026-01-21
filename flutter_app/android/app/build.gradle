@@ -29,19 +29,19 @@ android {
     configurations.all {
         resolutionStrategy.eachDependency { details ->
             if (details.requested.group == 'org.jetbrains.kotlin') {
-                details.useVersion "1.9.23"
+                details.useVersion "1.9.0"
             }
         }
     }
     buildToolsVersion "34.0.0"
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     sourceSets {
@@ -68,4 +68,10 @@ flutter {
 }
 
 dependencies {
+    // [사용자 요청] 네이버 지도 SDK에서 bcprov 1.79 차단(Exclude)
+    implementation ("com.naver.maps:map-sdk:3.17.0") {
+        exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
+    }
+    // 대신 안전한 1.78 버전을 직접 주입 (Inject)
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.78'
 }
