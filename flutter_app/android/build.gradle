@@ -14,9 +14,11 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        // [필수] 네이버 지도 SDK 저장소 추가
+        maven { url 'https://naver.jfrog.io/artifactory/maven/' }
     }
 
-    // [핵심] 어떤 모듈이든 무조건 1.78만 쓰도록 강제 (Force)
+    // [핵심] bcprov 1.78 강제 고정 (1.79 차단)
     configurations.all {
         resolutionStrategy {
             force 'org.bouncycastle:bcprov-jdk18on:1.78'
