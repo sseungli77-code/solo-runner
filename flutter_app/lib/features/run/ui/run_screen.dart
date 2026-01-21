@@ -1,10 +1,11 @@
-
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import '../logic/gps_service.dart';
 
 class RunScreen extends StatefulWidget {
-  final Function(Map<String, dynamic>) onSaveRun; // 러닝 데이터 저장 요청
+  final Function(Map<String, dynamic>) onSaveRun;
 
   const RunScreen({super.key, required this.onSaveRun});
 
@@ -15,6 +16,10 @@ class RunScreen extends StatefulWidget {
 class _RunScreenState extends State<RunScreen> {
   final GpsService _gpsService = GpsService();
   bool _isRunning = false;
+  
+  // [Fix] 지도 초기화 상태 추적
+  bool _isMapInitialized = false;
+  
   double _distKm = 0.0;
   String _pace = "-'--\"";
   Timer? _timer;
@@ -23,12 +28,12 @@ class _RunScreenState extends State<RunScreen> {
   @override
   void initState() {
     super.initState();
-    // GPS callback 설정
+    _initializeMap();
+    
     _gpsService.onDistanceUpdate = (distInc, currentPace) {
        if (mounted && _isRunning) {
          setState(() {
            _distKm += distInc;
-           // 페이스 계산
            if (_distKm > 0) {
               double totalMinutes = _seconds / 60.0;
               double paceVal = totalMinutes / _distKm;
@@ -40,15 +45,32 @@ class _RunScreenState extends State<RunScreen> {
        }
     };
   }
+
+  Future<void> _initializeMap() async {
+    // [Fix] 초기화 완료될 때까지 기다렸다가 상태 업데이트
+    try {
+      await NaverMapSdk.instance.initialize(
+        clientId: '35sazlmvtf', // [Double Safety] XML 못 읽을 경우 대비 코드 삽입
+        onAuthFailed: (ex) {
+           debugPrint("********* 네이버 지도 인증 실패: $ex *********");
+        }
+      );
+      if (mounted) {
+        setState(() {
+          _isMapInitialized = true;
+        });
+      }
+    } catch (e) {
+      debugPrint("********* 네이버 지도 초기화 에러: $e *********");
+    }
+  }
   
   void _toggleRun() async {
     if (_isRunning) {
-        // PAUSE/STOP
         _timer?.cancel();
         _gpsService.stopTracking();
         setState(() => _isRunning = false);
-        // 여기서 바로 저장할 수도 있고, 따로 'Finish' 버튼을 만들 수도 있음.
-        // 현재 로직상 Pause 시 저장하는 걸로 유지.
+        
         widget.onSaveRun({
             'dist': _distKm,
             'time': _seconds,
@@ -56,18 +78,21 @@ class _RunScreenState extends State<RunScreen> {
             'date': DateTime.now().toIso8601String(),
         });
     } else {
-        // START
         bool granted = await _gpsService.checkPermission();
-        if (!granted) return; // 권한 거부 시
+        if (!granted) return; 
+
+        if (await Permission.notification.isDenied) {
+             await Permission.notification.request();
+        }
+
+        _timer?.cancel();
 
         setState(() { _isRunning = true; _seconds = 0; _distKm = 0.0; _pace = "-'--\""; });
         
-        // 타이머 시작 (1초마다 시간 증가)
         _timer = Timer.periodic(const Duration(seconds: 1), (t) { 
            if (mounted) setState(() => _seconds++); 
         });
         
-        // GPS 추적 시작
         _gpsService.startTracking();
     }
   }
@@ -85,15 +110,25 @@ class _RunScreenState extends State<RunScreen> {
     
     return Stack(
       children: [
-        // Map Placeholder 
-        Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0F0F1E),
-            image: DecorationImage(image: NetworkImage("https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.png"), opacity: 0.1, fit: BoxFit.cover)
-          ),
-          child: const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.map, size: 40, color: Colors.white12), SizedBox(height: 10), Text("Map View Disabled", style: TextStyle(color: Colors.white24))])),
+        // ✅ REAL Naver Map Widget (초기화 완료 시에만 표시)
+        Positioned.fill(
+          child: _isMapInitialized 
+            ? NaverMap(
+                options: const NaverMapViewOptions(
+                  indoorEnable: true,
+                  locationButtonEnable: true,
+                  consumeSymbolTapEvents: false,
+                  mapType: NMapType.navi,
+                  nightModeEnable: true,
+                ),
+              )
+            : Container(
+                color: Colors.black, // 로딩 중일 땐 검은 화면
+                child: const Center(child: CircularProgressIndicator(color: Color(0xFF00FFF0))),
+              ),
         ),
         
+        // Gradient Overlay
         Positioned.fill(child: Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.black.withOpacity(0.7), Colors.transparent, Colors.black.withOpacity(0.8)], begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: const [0.0, 0.4, 0.8])))),
         
         // Top Info
@@ -133,7 +168,7 @@ class _RunScreenState extends State<RunScreen> {
         Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-             Text(value, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+             Text(value, style: const TextStyle(color: Color(0xFF00FFF0), fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
              const SizedBox(width: 4),
              Text(unit, style: const TextStyle(color: Color(0xFF00FFF0), fontSize: 12, fontWeight: FontWeight.bold)),
         ])
