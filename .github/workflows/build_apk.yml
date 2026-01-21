@@ -13,39 +13,57 @@ jobs:
         working-directory: ./flutter_app
 
     steps:
+    # 1. 코드 체크아웃
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # 2. Android SDK 설정
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
       with:
         cmdline-tools-version: 11076708
         packages: 'platforms;android-34 build-tools;34.0.0 platform-tools'
 
+    # 3. Java 17 설정 (Gradle 8.2 필수)
     - name: Setup Java
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
-        distribution: 'zulu'
+        distribution: 'temurin'
         java-version: '17'
 
+    # 4. Flutter 설정
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.22.x'
         channel: 'stable'
+        cache: true
 
+    # 5. Android Licenses
     - name: Accept Android Licenses
       run: yes | flutter doctor --android-licenses || true
 
+    # ▼▼▼ [핵심] 6. Gradle 캐시 강제 삭제 (골든존!) ▼▼▼
+    - name: Force Clean Gradle Cache
+      run: |
+        echo "🧹 Cleaning Gradle Cache..."
+        rm -rf ~/.gradle/caches
+        rm -rf ~/.gradle/wrapper
+        echo "✅ Done."
+
+    # 7. 라이브러리 다운로드
     - name: Get Flutter Dependencies
       run: flutter pub get
 
+    # 8. APK 빌드 (데몬 끄기)
     - name: Build APK
+      env:
+        GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
       run: flutter build apk --release
 
+    # 9. APK 업로드
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: solo-runner-native
         path: flutter_app/build/app/outputs/flutter-apk/app-release.apk
-
