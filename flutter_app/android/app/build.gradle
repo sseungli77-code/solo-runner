@@ -29,19 +29,20 @@ android {
     configurations.all {
         resolutionStrategy.eachDependency { details ->
             if (details.requested.group == 'org.jetbrains.kotlin') {
-                details.useVersion "1.9.23"
+                details.useVersion "1.9.0"
             }
         }
     }
     buildToolsVersion "34.0.0"
 
+    // [필수] bcprov 1.78 사용을 위해 Java 17로 업그레이드
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     sourceSets {
@@ -68,4 +69,8 @@ flutter {
 }
 
 dependencies {
+    // [핵심] 네이버 맵 SDK 직접 선언 제거함 (플러그인이 알아서 가져오게 함)
+    
+    // 대신 안전한 bcprov 1.78만 쏙 넣어줍니다.
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.78'
 }
