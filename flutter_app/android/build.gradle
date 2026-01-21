@@ -1,13 +1,19 @@
+// 1. 루트 프로젝트 빌드 스크립트 설정
 buildscript {
     ext.kotlin_version = '1.9.0'
     repositories {
         google()
         mavenCentral()
     }
-
     dependencies {
-        classpath "com.android.tools.build:gradle:8.2.1"
+        classpath 'com.android.tools.build:gradle:8.2.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+    // 루트 빌드 도구 강제 고정
+    configurations.classpath {
+        resolutionStrategy {
+            force 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+        }
     }
 }
 
@@ -19,12 +25,33 @@ allprojects {
 }
 
 rootProject.buildDir = '../build'
+
+// ▼▼▼ [여기가 핵심입니다] 모든 하위 프로젝트(네이버 지도 등) 설정을 가로챕니다 ▼▼▼
 subprojects {
+    // 1. 플러그인 빌드 도구(BuildScript)가 1.79를 못 쓰게 막음 (이게 빠져서 실패했었습니다)
+    buildscript {
+        repositories {
+            google()
+            mavenCentral()
+        }
+        configurations.classpath {
+            resolutionStrategy {
+                force 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+            }
+        }
+    }
+
+    // 2. 앱 실행 시(Runtime) 1.79를 못 쓰게 막음
+    project.configurations.all {
+        resolutionStrategy {
+            force 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+        }
+    }
+    
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
     project.evaluationDependsOn(':app')
 }
+// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
