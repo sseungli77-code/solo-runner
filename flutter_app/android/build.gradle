@@ -16,6 +16,14 @@ allprojects {
         google()
         mavenCentral()
     }
+    
+    // --- FORCE VERSION FIX (User Requested) ---
+    configurations.all {
+        resolutionStrategy {
+            force 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+        }
+    }
+    // ------------------------------------------
 }
 
 rootProject.buildDir = '../build'
