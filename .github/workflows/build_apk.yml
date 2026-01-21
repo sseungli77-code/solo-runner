@@ -51,7 +51,13 @@ jobs:
         rm -rf ~/.gradle/wrapper
         echo "✅ Done."
 
-    # 7. 라이브러리 다운로드
+    # [추가] 7-1. Gradle 8.2 설치 (Wrapper 없을 때 대비)
+    - name: Setup Gradle
+      uses: gradle/gradle-build-action@v2
+      with:
+        gradle-version: 8.2
+    
+    # 8. 라이브러리 다운로드
     - name: Get Flutter Dependencies
       run: flutter pub get
 
@@ -61,8 +67,8 @@ jobs:
     - name: Pre-load Dependencies
       run: |
         cd android
-        chmod +x gradlew
-        ./gradlew dependencies --no-daemon --refresh-dependencies --max-workers=1
+        # Wrapper 파일이 없으므로 시스템에 설치된 gradle을 직접 호출합니다.
+        gradle dependencies --no-daemon --refresh-dependencies --max-workers=1
         cd ..
 
     # [Step 2] 본 게임: 이미 받아둔 파일로 APK 빌드
