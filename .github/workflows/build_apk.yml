@@ -28,6 +28,9 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
+    - name: Force Clean Gradle Cache
+      run: rm -rf ~/.gradle/caches ~/.gradle/wrapper
+
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
