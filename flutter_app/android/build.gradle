@@ -5,28 +5,38 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath "com.android.tools.build:gradle:8.2.1"
+        classpath 'com.android.tools.build:gradle:8.2.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
-// ▼▼▼▼▼▼▼▼▼ [USER FIXED CODE] ▼▼▼▼▼▼▼▼▼
-// Force downgrade bcprov library for ALL subprojects to prevent build errors
+// 1. 모든 프로젝트(앱 + 플러그인)에 대해 저장소 설정
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+// 2. [핵심] 모든 서브프로젝트(플러그인 포함)의 설정을 강제로 가로채서 버전을 고정
 subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty("android")) {
+            project.android {
+                if (namespace == null) {
+                    namespace project.group
+                }
+            }
+        }
+    }
+    
+    // 일반 의존성 강제 조정
     project.configurations.all {
         resolutionStrategy.eachDependency { details ->
             if (details.requested.group == 'org.bouncycastle' && details.requested.name.contains('bcprov')) {
                 details.useVersion '1.78.1'
             }
         }
-    }
-}
-// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 
-
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
     }
 }
 
