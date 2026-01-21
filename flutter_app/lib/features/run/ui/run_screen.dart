@@ -1,10 +1,11 @@
-
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 import '../logic/gps_service.dart';
 
 class RunScreen extends StatefulWidget {
-  final Function(Map<String, dynamic>) onSaveRun; // 러닝 데이터 저장 요청
+  final Function(Map<String, dynamic>) onSaveRun;
 
   const RunScreen({super.key, required this.onSaveRun});
 
@@ -23,12 +24,12 @@ class _RunScreenState extends State<RunScreen> {
   @override
   void initState() {
     super.initState();
-    // GPS callback 설정
+    _initializeMap();
+    
     _gpsService.onDistanceUpdate = (distInc, currentPace) {
        if (mounted && _isRunning) {
          setState(() {
            _distKm += distInc;
-           // 페이스 계산
            if (_distKm > 0) {
               double totalMinutes = _seconds / 60.0;
               double paceVal = totalMinutes / _distKm;
@@ -40,15 +41,17 @@ class _RunScreenState extends State<RunScreen> {
        }
     };
   }
+
+  Future<void> _initializeMap() async {
+    await NaverMapSdk.instance.initialize(); 
+  }
   
   void _toggleRun() async {
     if (_isRunning) {
-        // PAUSE/STOP
         _timer?.cancel();
         _gpsService.stopTracking();
         setState(() => _isRunning = false);
-        // 여기서 바로 저장할 수도 있고, 따로 'Finish' 버튼을 만들 수도 있음.
-        // 현재 로직상 Pause 시 저장하는 걸로 유지.
+        
         widget.onSaveRun({
             'dist': _distKm,
             'time': _seconds,
@@ -56,18 +59,21 @@ class _RunScreenState extends State<RunScreen> {
             'date': DateTime.now().toIso8601String(),
         });
     } else {
-        // START
         bool granted = await _gpsService.checkPermission();
-        if (!granted) return; // 권한 거부 시
+        if (!granted) return; 
+
+        if (await Permission.notification.isDenied) {
+             await Permission.notification.request();
+        }
+
+        _timer?.cancel();
 
         setState(() { _isRunning = true; _seconds = 0; _distKm = 0.0; _pace = "-'--\""; });
         
-        // 타이머 시작 (1초마다 시간 증가)
         _timer = Timer.periodic(const Duration(seconds: 1), (t) { 
            if (mounted) setState(() => _seconds++); 
         });
         
-        // GPS 추적 시작
         _gpsService.startTracking();
     }
   }
@@ -85,15 +91,20 @@ class _RunScreenState extends State<RunScreen> {
     
     return Stack(
       children: [
-        // Map Placeholder 
-        Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0F0F1E),
-            image: DecorationImage(image: NetworkImage("https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.png"), opacity: 0.1, fit: BoxFit.cover)
+        // ✅ REAL Naver Map Widget
+        Positioned.fill(
+          child: NaverMap(
+            options: const NaverMapViewOptions(
+              indoorEnable: true,
+              locationButtonEnable: true,
+              consumeSymbolTapEvents: false,
+              mapType: NMapType.navi,
+              nightModeEnable: true,
+            ),
           ),
-          child: const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.map, size: 40, color: Colors.white12), SizedBox(height: 10), Text("Map View Disabled", style: TextStyle(color: Colors.white24))])),
         ),
         
+        // Gradient Overlay
         Positioned.fill(child: Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.black.withOpacity(0.7), Colors.transparent, Colors.black.withOpacity(0.8)], begin: Alignment.topCenter, end: Alignment.bottomCenter, stops: const [0.0, 0.4, 0.8])))),
         
         // Top Info

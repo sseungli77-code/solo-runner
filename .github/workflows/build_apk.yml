@@ -34,13 +34,22 @@ jobs:
         flutter-version: '3.22.x'
         channel: 'stable'
 
-    - name: Accept Android Licenses
-      run: yes | flutter doctor --android-licenses || true
+    # [Standard] 6. Gradle 캐시 강제 삭제
+    - name: Force Clean Gradle Cache
+      run: |
+        rm -rf ~/.gradle/caches
+        rm -rf ~/.gradle/wrapper
+        echo "✅ Done."
 
+    # 7. 라이브러리 다운로드
     - name: Get Flutter Dependencies
       run: flutter pub get
 
+    # 8. APK 빌드 (표준 방식)
     - name: Build APK
+      # workers=1 없어도 jetifier ignore로 해결될 것임
+      env:
+        GRADLE_OPTS: "-Dorg.gradle.daemon=false"
       run: flutter build apk --release
 
     - name: Upload APK
@@ -48,4 +57,3 @@ jobs:
       with:
         name: solo-runner-native
         path: flutter_app/build/app/outputs/flutter-apk/app-release.apk
-
