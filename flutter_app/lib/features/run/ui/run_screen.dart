@@ -91,7 +91,7 @@ class _RunScreenState extends State<RunScreen> {
     
     return Stack(
       children: [
-        // ✅ REAL Naver Map Widget (지도가 진짜로 나옵니다!)
+        // ✅ REAL Naver Map Widget
         Positioned.fill(
           child: NaverMap(
             options: const NaverMapViewOptions(
@@ -144,7 +144,7 @@ class _RunScreenState extends State<RunScreen> {
         Text(label, style: const TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-             Text(value, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+             Text(value, style: const TextStyle(color: Color(0xFF00FFF0), fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
              const SizedBox(width: 4),
              Text(unit, style: const TextStyle(color: Color(0xFF00FFF0), fontSize: 12, fontWeight: FontWeight.bold)),
         ])
