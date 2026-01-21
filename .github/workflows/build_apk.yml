@@ -55,10 +55,22 @@ jobs:
     - name: Get Flutter Dependencies
       run: flutter pub get
 
-    # 8. APK 빌드 (데몬 끄기)
+    # [Step 1] 준비 운동: 라이브러리만 먼저 다운로드 (빌드 X)
+    # --refresh-dependencies: 캐시 무시하고 새로 받음
+    # --max-workers=1: 무조건 일꾼 1명이 차근차근 다운로드 (충돌 0%)
+    - name: Pre-load Dependencies
+      run: |
+        cd android
+        chmod +x gradlew
+        ./gradlew dependencies --no-daemon --refresh-dependencies --max-workers=1
+        cd ..
+
+    # [Step 2] 본 게임: 이미 받아둔 파일로 APK 빌드
+    # --offline을 쓰면 좋겠지만, Flutter가 내부적으로 pub get을 할 수 있으므로 일반 빌드로 하되,
+    # 이미 Gradle 캐시가 완벽하므로 네트워크 충돌이 안 일어납니다.
     - name: Build APK
       env:
-        GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=1 -Dorg.gradle.parallel=false"
+         GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false -Dorg.gradle.workers.max=1"
       run: flutter build apk --release
 
     # 9. APK 업로드

@@ -1,3 +1,4 @@
+// 1. 빌드 스크립트 설정 (여기가 컨트롤 타워입니다)
 buildscript {
     ext.kotlin_version = '1.9.0'
     repositories {
@@ -5,40 +6,36 @@ buildscript {
         mavenCentral()
     }
     dependencies {
+        // [핵심] 빌드 도구들이 싸우지 않게, 대장이 먼저 '안전한 파일'을 확보합니다.
+        classpath 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+        
         classpath 'com.android.tools.build:gradle:8.2.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        
-        // ▼▼▼ [Pre-load Strategy] Root downloads it FIRST safely ▼▼▼
-        classpath 'org.bouncycastle:bcprov-jdk18on:1.78.1'
-    }
-    
-    // Force version for build tool chain
-    configurations.classpath {
-        resolutionStrategy {
-            force 'org.bouncycastle:bcprov-jdk18on:1.78.1'
-        }
     }
 }
 
+// 2. 모든 프로젝트 공통 설정
 allprojects {
     repositories {
         google()
         mavenCentral()
     }
+
+    // [핵심] 모든 서브 모듈(네이버 지도, 앱 링크 등)에게 "딴짓하지 말고 이거 써"라고 강제합니다.
+    configurations.all {
+        resolutionStrategy {
+            force 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+            // 혹시 모를 파생 라이브러리까지 싹 다 고정
+            force 'org.bouncycastle:bcpkix-jdk18on:1.78.1'
+            force 'org.bouncycastle:bcutil-jdk18on:1.78.1'
+        }
+    }
 }
 
 rootProject.buildDir = '../build'
-
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
     project.evaluationDependsOn(':app')
-
-    // Force version for runtime dependencies
-    project.configurations.all {
-        resolutionStrategy {
-            force 'org.bouncycastle:bcprov-jdk18on:1.78.1'
-        }
-    }
 }
 
 tasks.register("clean", Delete) {
