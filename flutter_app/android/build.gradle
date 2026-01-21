@@ -4,9 +4,8 @@ buildscript {
         google()
         mavenCentral()
     }
-
     dependencies {
-        classpath "com.android.tools.build:gradle:8.2.1"
+        classpath 'com.android.tools.build:gradle:8.2.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -19,11 +18,17 @@ allprojects {
 }
 
 rootProject.buildDir = '../build'
+
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
     project.evaluationDependsOn(':app')
+
+    project.configurations.all {
+        resolutionStrategy {
+            // [사용자 요청] 네이버 지도야, 1.79 고집 피우지 말고 무조건 1.78 써!
+            force 'org.bouncycastle:bcprov-jdk18on:1.78'
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
